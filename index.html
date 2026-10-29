@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#090d16">
+  <meta name="theme-color" content="#071024">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>KODIME — Control Residencial de Menores</title>
+  <title>KODIME — SAMU Corporación</title>
   
   <!-- Typography: Inter & Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -25,12 +25,24 @@
             mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
           },
           colors: {
-            slate: {
-              950: '#070a12',
-              900: '#0e1422',
-              850: '#131b2e',
-              800: '#1b253d',
-              700: '#2a3756',
+            samu: {
+              // Paleta Oficial SAMU Corporación
+              navy: {
+                950: '#060d1e', // Fondo medianoche SAMU
+                900: '#0b1736', // Superficies
+                850: '#0f2048', // Tarjetas principales
+                800: '#142a5c', // Bordes corporativos
+                700: '#1b3775', // Azul medio
+                600: '#204391', // Azul SAMU principal
+                500: '#2b54b2', // Azul claro acento
+              },
+              red: {
+                700: '#8e1732',
+                600: '#a81c3c',
+                500: '#c0264b', // Carmesí/Granate oficial del logo SAMU
+                400: '#d93a5e',
+                300: '#eb6280',
+              }
             }
           }
         }
@@ -52,6 +64,7 @@
       padding-bottom: env(safe-area-inset-bottom);
       -webkit-tap-highlight-color: transparent;
       user-select: none;
+      background: radial-gradient(circle at 50% 0%, #0f2352 0%, #060d1e 75%);
     }
     input, textarea, select {
       user-select: text;
@@ -65,11 +78,20 @@
     }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 antialiased min-h-screen">
+<body class="bg-samu-navy-950 text-slate-100 antialiased min-h-screen">
   <div id="root"></div>
 
   <script type="text/babel">
     const { useState, useEffect, useRef } = React;
+
+    // Componente SVG Oficial del Isotipo / Cruz Geométrica de SAMU
+    const SamuEmblem = ({ className = "w-6 h-6", color = "text-white" }) => (
+      <svg className={className} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M40 10H60V30H75V15H90V40H70V60H85V75H70V90H45V70H25V85H10V60H30V40H15V25H30V10H40Z" 
+              stroke="currentColor" strokeWidth="6" strokeLinejoin="miter" />
+        <rect x="42" y="42" width="16" height="16" fill="#c0264b" />
+      </svg>
+    );
 
     // Web Audio API Synthesizer (Zero-latency institutional beeps)
     const playAudioFeedback = (type) => {
@@ -148,14 +170,14 @@
       { id: 'moviles', label: 'Móviles', schedule: 'Control y Custodia' }
     ];
 
-    // ROLES DE PERSONAL
+    // ROLES DE PERSONAL CON COLORES CORPORATIVOS SAMU
     const STAFF_ROLES = [
-      { id: 'educador', label: 'Educador/a', badge: 'EDU', color: 'bg-blue-600', desc: 'Equipo Educativo' },
+      { id: 'educador', label: 'Educador/a', badge: 'EDU', color: 'bg-samu-navy-600', desc: 'Equipo Educativo SAMU' },
       { id: 'ate', label: 'ATE', badge: 'ATE', color: 'bg-emerald-600', desc: 'Auxiliar Técnico Educativo' },
-      { id: 'mediador', label: 'Mediador/a', badge: 'MED', color: 'bg-purple-600', desc: 'Mediación Social e Intercultural' }
+      { id: 'mediador', label: 'Mediador/a', badge: 'MED', color: 'bg-samu-red-500', desc: 'Mediación Social e Intercultural' }
     ];
 
-    // DATASET INICIAL DE MENORES
+    // DATASET DE RESIDENTES
     const INITIAL_MINORS = [
       {
         id: 'ID-001',
@@ -460,18 +482,9 @@
     ];
 
     function App() {
-      // ESTADO DE SESIÓN DE PERSONAL
-      const [currentUser, setCurrentUser] = useState(() => {
-        // Precargar para conveniencia de demo
-        return { role: 'educador', name: 'Laura Sánchez' };
-      });
-      const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-      // NAVEGACIÓN PRINCIPAL: 'auth' | 'menu' | 'recount' | 'add_minor'
-      const [navScreen, setNavScreen] = useState('auth');
-
-      // SUB-VISTA DENTRO DE RECUENTO: 'scan' | 'summary'
-      const [recountView, setRecountView] = useState('scan');
+      const [currentUser, setCurrentUser] = useState({ role: 'educador', name: 'Laura Sánchez' });
+      const [navScreen, setNavScreen] = useState('auth'); // 'auth' | 'menu' | 'recount' | 'add_minor'
+      const [recountView, setRecountView] = useState('scan'); // 'scan' | 'summary'
 
       const [currentMode, setCurrentMode] = useState('comida');
       const [minors, setMinors] = useState(INITIAL_MINORS);
@@ -496,7 +509,7 @@
       });
       const [formSuccessMessage, setFormSuccessMessage] = useState(null);
 
-      // Registros por turno con autor
+      // Registros por turno
       const [records, setRecords] = useState({
         desayuno: { 'ID-001': { timestamp: '08:42:10', registeredBy: 'Carlos Ruiz (Educador)' } },
         mediodia: {},
@@ -527,15 +540,12 @@
       const pendingCount = totalCount - registeredCount;
       const percentage = Math.round((registeredCount / totalCount) * 100) || 0;
 
-      // Iniciar sesión
       const handleLoginSubmit = (e) => {
         e.preventDefault();
         if (!currentUser.name.trim()) return;
-        setIsLoggedIn(true);
         setNavScreen('menu');
       };
 
-      // Fichar por escáner o botón de prueba
       const processScan = (rawCode) => {
         const code = (rawCode || '').trim().toUpperCase();
         if (!code) return;
@@ -643,7 +653,6 @@
         }
       };
 
-      // Guardar nuevo menor
       const handleSaveNewMinor = (e) => {
         e.preventDefault();
         if (!newMinorForm.name.trim()) {
@@ -651,7 +660,6 @@
           return;
         }
 
-        // Generar ID correlativo y Pulsera nominal automática
         const nextIndex = minors.length + 1;
         const generatedId = `ID-${String(nextIndex).padStart(3, '0')}`;
         const generatedWristband = `PUL-${Math.floor(1000 + Math.random() * 9000)}`;
@@ -699,7 +707,6 @@
           wristband: generatedWristband
         });
 
-        // Limpiar formulario
         setNewMinorForm({
           name: '',
           fatherName: '',
@@ -715,30 +722,39 @@
 
       return (
         <div className={`min-h-screen flex flex-col justify-between max-w-md mx-auto relative transition-colors duration-200 ${
-          screenFlash === 'green' ? 'bg-emerald-950/20' : 
-          screenFlash === 'red' ? 'bg-rose-950/20' : ''
+          screenFlash === 'green' ? 'bg-emerald-950/30' : 
+          screenFlash === 'red' ? 'bg-samu-red-700/30' : ''
         }`}>
 
           {/* ============================================================ */}
-          {/* PANTALLA 1: INICIO DE SESIÓN DE PERSONAL (EDUCADOR / ATE / MEDIADOR) */}
+          {/* PANTALLA 1: INICIO DE SESIÓN CON BRANDING SAMU CORPORACIÓN   */}
           {/* ============================================================ */}
           {navScreen === 'auth' && (
             <div className="flex-1 flex flex-col justify-between p-5">
               <div>
-                {/* Logo & Header */}
+                {/* Cabecera con Logo Oficial SAMU */}
                 <div className="text-center pt-8 pb-6">
-                  <div className="w-14 h-14 rounded-2xl bg-blue-600 flex items-center justify-center font-black tracking-wider text-white text-xl mx-auto shadow-lg shadow-blue-600/30 border border-blue-400/40 mb-3">
-                    KD
+                  <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-samu-navy-900 border border-samu-navy-800 shadow-xl mb-3">
+                    <SamuEmblem className="w-10 h-10 text-white mr-2.5" />
+                    <div className="text-left">
+                      <div className="flex items-baseline space-x-1">
+                        <span className="text-xl font-black tracking-tight text-samu-red-500 font-sans">samu</span>
+                      </div>
+                      <span className="text-[9px] font-semibold uppercase tracking-widest text-slate-300 block -mt-1">corporación</span>
+                    </div>
                   </div>
-                  <h1 className="text-2xl font-black tracking-tight text-white">KODIME</h1>
-                  <p className="text-xs text-slate-400 mt-1">Control Residencial y Gestión de Menores</p>
+                  <h1 className="text-2xl font-black tracking-tight text-white flex items-center justify-center gap-2">
+                    KODIME
+                    <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-full bg-samu-red-500/20 text-samu-red-400 border border-samu-red-500/30">Área Menores</span>
+                  </h1>
+                  <p className="text-xs text-slate-300 mt-1 font-medium">Control Residencial y Gestión de Accesos</p>
                 </div>
 
-                {/* Formulario de Login */}
-                <form onSubmit={handleLoginSubmit} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-4">
+                {/* Formulario de Inicio */}
+                <form onSubmit={handleLoginSubmit} className="bg-samu-navy-900/90 backdrop-blur-md border border-samu-navy-800 rounded-2xl p-4 shadow-2xl space-y-4">
                   <div>
                     <label className="text-xs font-bold uppercase tracking-wider text-slate-300 block mb-2">
-                      1. Selecciona tu perfil profesional:
+                      1. Perfil profesional en turno:
                     </label>
                     <div className="grid grid-cols-3 gap-2">
                       {STAFF_ROLES.map((r) => {
@@ -750,11 +766,11 @@
                             onClick={() => setCurrentUser(prev => ({ ...prev, role: r.id }))}
                             className={`p-2.5 rounded-xl border text-center transition-all ${
                               isSelected
-                                ? 'bg-blue-600 text-white border-blue-400 shadow-md ring-2 ring-blue-500/30'
-                                : 'bg-slate-950 text-slate-400 border-slate-800 hover:border-slate-700'
+                                ? 'bg-samu-navy-700 text-white border-samu-red-500 shadow-lg ring-2 ring-samu-red-500/40'
+                                : 'bg-samu-navy-950 text-slate-400 border-samu-navy-800 hover:border-slate-600'
                             }`}
                           >
-                            <span className="text-[10px] font-mono font-bold uppercase block opacity-80">{r.badge}</span>
+                            <span className={`text-[10px] font-mono font-bold uppercase block ${isSelected ? 'text-samu-red-400' : 'opacity-80'}`}>{r.badge}</span>
                             <span className="text-xs font-bold block mt-0.5">{r.label}</span>
                           </button>
                         );
@@ -764,7 +780,7 @@
 
                   <div>
                     <label className="text-xs font-bold uppercase tracking-wider text-slate-300 block mb-1.5">
-                      2. Nombre del profesional en turno:
+                      2. Nombre del profesional:
                     </label>
                     <input
                       type="text"
@@ -772,13 +788,13 @@
                       value={currentUser.name}
                       onChange={(e) => setCurrentUser(prev => ({ ...prev, name: e.target.value }))}
                       placeholder="Ej: Laura Sánchez, Carlos Ruiz..."
-                      className="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 text-white text-sm px-3.5 py-2.5 rounded-xl outline-none placeholder:text-slate-500"
+                      className="w-full bg-samu-navy-950 border border-samu-navy-800 focus:border-samu-red-500 text-white text-sm px-3.5 py-2.5 rounded-xl outline-none placeholder:text-slate-500"
                     />
                   </div>
 
                   {/* Acceso Rápido de Demo */}
                   <div className="pt-1">
-                    <span className="text-[10px] text-slate-500 block mb-1 font-semibold uppercase">Perfiles rápidos demo:</span>
+                    <span className="text-[10px] text-slate-400 block mb-1 font-semibold uppercase">Perfiles rápidos demo:</span>
                     <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
                       {[
                         { role: 'educador', name: 'Laura Sánchez' },
@@ -789,7 +805,7 @@
                           key={idx}
                           type="button"
                           onClick={() => setCurrentUser(demoUser)}
-                          className="text-[10px] px-2 py-1 bg-slate-950 text-slate-300 rounded border border-slate-800 hover:border-blue-500/60"
+                          className="text-[10px] px-2 py-1 bg-samu-navy-950 text-slate-300 rounded border border-samu-navy-800 hover:border-samu-red-500/60"
                         >
                           {demoUser.name} ({demoUser.role.toUpperCase()})
                         </button>
@@ -799,39 +815,40 @@
 
                   <button
                     type="submit"
-                    className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-98 mt-2"
+                    className="w-full py-3 bg-gradient-to-r from-samu-navy-700 via-samu-navy-600 to-samu-red-600 hover:brightness-110 text-white font-bold text-sm uppercase tracking-wider rounded-xl transition-all shadow-lg active:scale-98 mt-2 border border-white/10"
                   >
                     Iniciar Turno ➔
                   </button>
                 </form>
               </div>
 
-              <div className="text-center py-4 text-[11px] text-slate-500">
-                Sistema seguro para centros residenciales · Versión Demo
+              <div className="text-center py-4 text-[11px] text-slate-400 font-medium flex items-center justify-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-samu-red-500"></span>
+                <span>SAMU Corporación · Soluciones Sociosanitarias</span>
               </div>
             </div>
           )}
 
           {/* ============================================================ */}
-          {/* PANTALLA 2: MENÚ PRINCIPAL DOBLE (RECUENTO / AÑADIR MENOR)    */}
+          {/* PANTALLA 2: MENÚ PRINCIPAL DOBLE CON PALETA SAMU             */}
           {/* ============================================================ */}
           {navScreen === 'menu' && (
             <div className="flex-1 flex flex-col justify-between p-4">
               <div>
                 {/* Cabecera del Menú */}
-                <header className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 shadow-sm mb-4">
+                <header className="bg-samu-navy-900 border border-samu-navy-800 rounded-2xl p-3.5 shadow-md mb-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2.5">
-                      <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center font-black text-white text-xs border border-blue-400/30">
-                        KD
+                      <div className="w-9 h-9 rounded-xl bg-samu-navy-800 border border-samu-navy-700 flex items-center justify-center shadow-inner">
+                        <SamuEmblem className="w-5 h-5 text-white" />
                       </div>
                       <div>
                         <div className="flex items-center space-x-1.5">
                           <span className="font-extrabold text-sm text-white">KODIME</span>
-                          <span className="text-[10px] font-mono px-1 py-0.2 rounded bg-slate-800 text-slate-300 border border-slate-700">v1.2</span>
+                          <span className="text-[10px] font-bold text-samu-red-400 bg-samu-red-500/10 px-1.5 py-0.2 rounded border border-samu-red-500/30">SAMU</span>
                         </div>
-                        <p className="text-[10px] text-slate-400">
-                          Operador: <strong className="text-slate-200">{currentUser.name}</strong> ({STAFF_ROLES.find(r => r.id === currentUser.role)?.label})
+                        <p className="text-[10px] text-slate-300">
+                          {currentUser.name} · <span className="text-samu-red-400 font-semibold">{STAFF_ROLES.find(r => r.id === currentUser.role)?.label}</span>
                         </p>
                       </div>
                     </div>
@@ -839,7 +856,7 @@
                     <button
                       type="button"
                       onClick={() => setNavScreen('auth')}
-                      className="text-[11px] font-semibold text-slate-400 hover:text-white px-2 py-1 bg-slate-950 rounded border border-slate-800"
+                      className="text-[11px] font-semibold text-slate-300 hover:text-white px-2.5 py-1 bg-samu-navy-950 rounded-lg border border-samu-navy-800"
                     >
                       Salir
                     </button>
@@ -847,26 +864,24 @@
                 </header>
 
                 <div className="mb-3 px-1">
-                  <h2 className="text-base font-black text-white">Panel de Gestión</h2>
-                  <p className="text-xs text-slate-400">Selecciona el módulo para iniciar la operativa:</p>
+                  <h2 className="text-base font-black text-white">Panel Operativo</h2>
+                  <p className="text-xs text-slate-400">Selecciona el módulo de gestión:</p>
                 </div>
 
-                {/* LOS 2 GRANDES APARTADOS DEL MENÚ */}
+                {/* LOS 2 GRANDES MÓDULOS */}
                 <div className="grid grid-cols-1 gap-3.5">
                   
-                  {/* BOTÓN 1: RECUENTO */}
+                  {/* RECUENTO */}
                   <button
                     type="button"
                     onClick={() => {
                       setNavScreen('recount');
                       setRecountView('scan');
                     }}
-                    className="p-5 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-850 border-2 border-blue-500/50 hover:border-blue-400 text-left transition-all active:scale-98 shadow-xl relative overflow-hidden group"
+                    className="p-5 rounded-2xl bg-gradient-to-br from-samu-navy-900 to-samu-navy-850 border-2 border-samu-navy-700 hover:border-samu-red-500 text-left transition-all active:scale-98 shadow-xl relative overflow-hidden group"
                   >
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl group-hover:bg-blue-500/20 transition-all"></div>
-                    
                     <div className="flex items-start justify-between relative z-10">
-                      <div className="w-12 h-12 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-xl shadow-md">
+                      <div className="w-12 h-12 rounded-xl bg-samu-navy-700 text-white flex items-center justify-center font-bold text-xl shadow-md border border-samu-navy-600">
                         📋
                       </div>
                       <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
@@ -875,93 +890,95 @@
                     </div>
 
                     <div className="mt-3 relative z-10">
-                      <h3 className="text-lg font-black text-white group-hover:text-blue-300 transition-colors">
+                      <h3 className="text-lg font-black text-white group-hover:text-slate-100 transition-colors">
                         Recuento y Control de Accesos
                       </h3>
                       <p className="text-xs text-slate-300 mt-1 leading-snug">
-                        Control por turnos (comidas, meriendas, móviles) con pistola lectora o selección táctil.
+                        Control por turnos (comidas, meriendas, custodia de móviles) con lector o selección táctil.
                       </p>
                     </div>
 
-                    <div className="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400 relative z-10">
-                      <span>Turno activo: <strong className="text-slate-200 uppercase">{MODES.find(m => m.id === currentMode)?.label}</strong></span>
-                      <span className="text-blue-400 font-bold">Abrir recuento ➔</span>
+                    <div className="mt-3 pt-2.5 border-t border-samu-navy-800 flex items-center justify-between text-[11px] text-slate-400 relative z-10">
+                      <span>Turno activo: <strong className="text-white uppercase">{MODES.find(m => m.id === currentMode)?.label}</strong></span>
+                      <span className="text-samu-red-400 font-bold group-hover:translate-x-0.5 transition-transform">Abrir recuento ➔</span>
                     </div>
                   </button>
 
-                  {/* BOTÓN 2: AÑADIR MENOR */}
+                  {/* AÑADIR MENOR */}
                   <button
                     type="button"
                     onClick={() => {
                       setFormSuccessMessage(null);
                       setNavScreen('add_minor');
                     }}
-                    className="p-5 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-850 border border-slate-800 hover:border-emerald-500/60 text-left transition-all active:scale-98 shadow-xl relative overflow-hidden group"
+                    className="p-5 rounded-2xl bg-gradient-to-br from-samu-navy-900 to-samu-navy-850 border border-samu-navy-800 hover:border-samu-navy-700 text-left transition-all active:scale-98 shadow-xl relative overflow-hidden group"
                   >
                     <div className="flex items-start justify-between relative z-10">
-                      <div className="w-12 h-12 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-xl shadow-md">
+                      <div className="w-12 h-12 rounded-xl bg-samu-red-600 text-white flex items-center justify-center font-bold text-xl shadow-md border border-samu-red-500">
                         ➕
                       </div>
-                      <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30">
-                        Alta Rápida
+                      <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-samu-red-500/15 text-samu-red-300 border border-samu-red-500/30">
+                        Nuevo Ingreso
                       </span>
                     </div>
 
                     <div className="mt-3 relative z-10">
-                      <h3 className="text-lg font-black text-white group-hover:text-emerald-300 transition-colors">
+                      <h3 className="text-lg font-black text-white group-hover:text-slate-100 transition-colors">
                         Añadir Nuevo Menor
                       </h3>
                       <p className="text-xs text-slate-300 mt-1 leading-snug">
-                        Formulario de filiación completa: progenitores, lugar y fecha de nacimiento, procedencia y asignación de pulsera.
+                        Filiación completa: progenitores, lugar y fecha de nacimiento, procedencia y asignación de pulsera.
                       </p>
                     </div>
 
-                    <div className="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400 relative z-10">
-                      <span>Asignación automática de pulsera nominal</span>
-                      <span className="text-emerald-400 font-bold">Nuevo registro ➔</span>
+                    <div className="mt-3 pt-2.5 border-t border-samu-navy-800 flex items-center justify-between text-[11px] text-slate-400 relative z-10">
+                      <span>Asignación nominal de pulsera</span>
+                      <span className="text-white font-bold group-hover:translate-x-0.5 transition-transform">Registrar menor ➔</span>
                     </div>
                   </button>
 
                 </div>
               </div>
 
-              {/* Pie con métricas de la sesión */}
-              <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-slate-400 flex items-center justify-between">
-                <span>Total residentes dados de alta: <strong className="text-white font-mono">{totalCount}</strong></span>
+              {/* Pie institucional */}
+              <div className="bg-samu-navy-900 border border-samu-navy-800 rounded-xl p-3 text-xs text-slate-400 flex items-center justify-between">
+                <span>Censo activo: <strong className="text-white font-mono">{totalCount} menores</strong></span>
                 <span className="font-mono text-emerald-400">{currentTimeStr}</span>
               </div>
             </div>
           )}
 
           {/* ============================================================ */}
-          {/* PANTALLA 3: FORMULARIO AÑADIR MENOR                           */}
+          {/* PANTALLA 3: FORMULARIO AÑADIR MENOR CON ESTILO SAMU          */}
           {/* ============================================================ */}
           {navScreen === 'add_minor' && (
             <div className="flex-1 flex flex-col justify-between">
-              {/* Header con botón para volver al menú */}
-              <header className="bg-slate-900/95 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40 px-3.5 py-3 shadow-sm flex items-center justify-between">
+              <header className="bg-samu-navy-900/95 backdrop-blur-md border-b border-samu-navy-800 sticky top-0 z-40 px-3.5 py-3 shadow-md flex items-center justify-between">
                 <button
                   type="button"
                   onClick={() => setNavScreen('menu')}
-                  className="text-xs font-bold text-blue-400 hover:text-blue-300 flex items-center gap-1 bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800"
+                  className="text-xs font-bold text-samu-red-400 hover:text-samu-red-300 flex items-center gap-1 bg-samu-navy-950 px-2.5 py-1 rounded-lg border border-samu-navy-800"
                 >
-                  ← Menú Principal
+                  ← Menú
                 </button>
-                <span className="font-bold text-sm text-white">Alta de Residente</span>
-                <span className="text-[10px] text-slate-400 font-mono">KODIME</span>
+                <div className="text-center">
+                  <span className="font-bold text-sm text-white block">Nuevo Ingreso de Residente</span>
+                  <span className="text-[9px] text-slate-400 font-mono">SAMU Corporación</span>
+                </div>
+                <div className="w-8"></div>
               </header>
 
               <main className="flex-1 px-3.5 py-3 overflow-y-auto space-y-3.5 pb-20">
                 {formSuccessMessage && (
-                  <div className="p-4 rounded-xl bg-emerald-950/80 border-2 border-emerald-500 shadow-lg text-center animate-bounce">
+                  <div className="p-4 rounded-xl bg-samu-navy-900 border-2 border-emerald-500 shadow-xl text-center animate-bounce">
                     <span className="text-2xl">✓</span>
                     <h4 className="font-black text-sm text-white mt-1">¡Menor Registrado con Éxito!</h4>
-                    <p className="text-xs text-emerald-200 mt-0.5">
-                      <strong>{formSuccessMessage.name}</strong> vinculado con código:
+                    <p className="text-xs text-slate-300 mt-0.5">
+                      <strong>{formSuccessMessage.name}</strong> dado de alta con pulsera asignada:
                     </p>
                     <div className="mt-2 flex items-center justify-center gap-2 font-mono">
-                      <span className="px-2 py-1 rounded bg-slate-900 text-blue-400 font-bold text-xs border border-blue-500/40">{formSuccessMessage.id}</span>
-                      <span className="px-2 py-1 rounded bg-slate-900 text-emerald-400 font-bold text-xs border border-emerald-500/40">{formSuccessMessage.wristband}</span>
+                      <span className="px-2 py-1 rounded bg-samu-navy-950 text-white font-bold text-xs border border-samu-navy-800">{formSuccessMessage.id}</span>
+                      <span className="px-2 py-1 rounded bg-samu-navy-950 text-emerald-400 font-bold text-xs border border-emerald-500/40">{formSuccessMessage.wristband}</span>
                     </div>
                     <div className="mt-3 flex gap-2">
                       <button
@@ -977,7 +994,7 @@
                       <button
                         type="button"
                         onClick={() => setFormSuccessMessage(null)}
-                        className="py-2 px-3 rounded-lg bg-slate-800 text-slate-300 text-xs font-semibold"
+                        className="py-2 px-3 rounded-lg bg-samu-navy-950 text-slate-300 text-xs font-semibold"
                       >
                         Añadir Otro
                       </button>
@@ -985,20 +1002,19 @@
                   </div>
                 )}
 
-                <form onSubmit={handleSaveNewMinor} className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 space-y-3 shadow-md">
+                <form onSubmit={handleSaveNewMinor} className="bg-samu-navy-900 border border-samu-navy-800 rounded-xl p-3.5 space-y-3 shadow-md">
                   
-                  {/* Foto de Perfil Simulación */}
-                  <div className="flex items-center space-x-3 p-2 bg-slate-950 rounded-lg border border-slate-800">
-                    <div className="w-12 h-12 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-xl font-bold text-slate-300">
+                  {/* Foto de Perfil */}
+                  <div className="flex items-center space-x-3 p-2 bg-samu-navy-950 rounded-lg border border-samu-navy-800">
+                    <div className="w-12 h-12 rounded-lg bg-samu-navy-850 border border-samu-navy-700 flex items-center justify-center text-xl font-bold text-slate-300">
                       📷
                     </div>
                     <div>
                       <span className="text-xs font-bold text-slate-200 block">Fotografía del Menor</span>
-                      <span className="text-[10px] text-slate-400 block">Identificación visual nominal para el expediente</span>
+                      <span className="text-[10px] text-slate-400 block">Identificación visual nominal para el expediente SAMU</span>
                     </div>
                   </div>
 
-                  {/* Nombres y Apellidos */}
                   <div>
                     <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
                       Nombres y Apellidos *
@@ -1009,11 +1025,10 @@
                       value={newMinorForm.name}
                       onChange={(e) => setNewMinorForm({ ...newMinorForm, name: e.target.value })}
                       placeholder="Ej: Karim Ben Barek"
-                      className="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 text-white text-xs px-3 py-2.5 rounded-lg outline-none"
+                      className="w-full bg-samu-navy-950 border border-samu-navy-800 focus:border-samu-red-500 text-white text-xs px-3 py-2.5 rounded-lg outline-none"
                     />
                   </div>
 
-                  {/* Nombre Padre y Madre */}
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
@@ -1024,7 +1039,7 @@
                         value={newMinorForm.fatherName}
                         onChange={(e) => setNewMinorForm({ ...newMinorForm, fatherName: e.target.value })}
                         placeholder="Nombre completo"
-                        className="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 text-white text-xs px-3 py-2 rounded-lg outline-none"
+                        className="w-full bg-samu-navy-950 border border-samu-navy-800 focus:border-samu-red-500 text-white text-xs px-3 py-2 rounded-lg outline-none"
                       />
                     </div>
                     <div>
@@ -1036,12 +1051,11 @@
                         value={newMinorForm.motherName}
                         onChange={(e) => setNewMinorForm({ ...newMinorForm, motherName: e.target.value })}
                         placeholder="Nombre completo"
-                        className="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 text-white text-xs px-3 py-2 rounded-lg outline-none"
+                        className="w-full bg-samu-navy-950 border border-samu-navy-800 focus:border-samu-red-500 text-white text-xs px-3 py-2 rounded-lg outline-none"
                       />
                     </div>
                   </div>
 
-                  {/* Lugar y Fecha de Nacimiento */}
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
@@ -1051,8 +1065,8 @@
                         type="text"
                         value={newMinorForm.birthPlace}
                         onChange={(e) => setNewMinorForm({ ...newMinorForm, birthPlace: e.target.value })}
-                        placeholder="Ej: Tetuán / Madrid"
-                        className="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 text-white text-xs px-3 py-2 rounded-lg outline-none"
+                        placeholder="Ej: Tetuán / Sevilla"
+                        className="w-full bg-samu-navy-950 border border-samu-navy-800 focus:border-samu-red-500 text-white text-xs px-3 py-2 rounded-lg outline-none"
                       />
                     </div>
                     <div>
@@ -1063,12 +1077,11 @@
                         type="date"
                         value={newMinorForm.birthDate}
                         onChange={(e) => setNewMinorForm({ ...newMinorForm, birthDate: e.target.value })}
-                        className="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 text-white text-xs px-3 py-2 rounded-lg outline-none"
+                        className="w-full bg-samu-navy-950 border border-samu-navy-800 focus:border-samu-red-500 text-white text-xs px-3 py-2 rounded-lg outline-none"
                       />
                     </div>
                   </div>
 
-                  {/* País de Procedencia y Ubicación */}
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
@@ -1077,7 +1090,7 @@
                       <select
                         value={newMinorForm.originCountry}
                         onChange={(e) => setNewMinorForm({ ...newMinorForm, originCountry: e.target.value })}
-                        className="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 text-white text-xs px-3 py-2 rounded-lg outline-none"
+                        className="w-full bg-samu-navy-950 border border-samu-navy-800 focus:border-samu-red-500 text-white text-xs px-3 py-2 rounded-lg outline-none"
                       >
                         <option value="España">España</option>
                         <option value="Marruecos">Marruecos</option>
@@ -1096,12 +1109,11 @@
                         value={newMinorForm.zone}
                         onChange={(e) => setNewMinorForm({ ...newMinorForm, zone: e.target.value })}
                         placeholder="Ej: Pabellón A · Hab. 106"
-                        className="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 text-white text-xs px-3 py-2 rounded-lg outline-none"
+                        className="w-full bg-samu-navy-950 border border-samu-navy-800 focus:border-samu-red-500 text-white text-xs px-3 py-2 rounded-lg outline-none"
                       />
                     </div>
                   </div>
 
-                  {/* Alergias / Protocolo Médico */}
                   <div>
                     <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
                       Protocolo Dietético / Médico
@@ -1109,7 +1121,7 @@
                     <select
                       value={newMinorForm.medicalAlert}
                       onChange={(e) => setNewMinorForm({ ...newMinorForm, medicalAlert: e.target.value })}
-                      className="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 text-white text-xs px-3 py-2 rounded-lg outline-none mb-1.5"
+                      className="w-full bg-samu-navy-950 border border-samu-navy-800 focus:border-samu-red-500 text-white text-xs px-3 py-2 rounded-lg outline-none mb-1.5"
                     >
                       <option value="none">Sin restricciones (Menú Ordinario)</option>
                       <option value="celiac">🌾 Celíaco (Menú Sin Gluten)</option>
@@ -1123,23 +1135,22 @@
                         type="text"
                         value={newMinorForm.medicalDetails}
                         onChange={(e) => setNewMinorForm({ ...newMinorForm, medicalDetails: e.target.value })}
-                        placeholder="Detalles médicos adicionales..."
-                        className="w-full bg-slate-950 border border-amber-500/50 text-amber-200 text-xs px-3 py-2 rounded-lg outline-none placeholder:text-slate-600"
+                        placeholder="Detalles médicos o protocolo sanitario..."
+                        className="w-full bg-samu-navy-950 border border-amber-500/50 text-amber-200 text-xs px-3 py-2 rounded-lg outline-none placeholder:text-slate-600"
                       />
                     )}
                   </div>
 
-                  {/* Asignación Automática Aviso */}
-                  <div className="p-2.5 rounded-lg bg-blue-950/30 border border-blue-500/30 text-[11px] text-blue-200 flex items-center justify-between font-mono">
-                    <span>ID sugerido: <strong>ID-{String(minors.length + 1).padStart(3, '0')}</strong></span>
-                    <span>Pulsera: <strong>Asignación Automática</strong></span>
+                  <div className="p-2.5 rounded-lg bg-samu-navy-950 border border-samu-navy-800 text-[11px] text-slate-300 flex items-center justify-between font-mono">
+                    <span>ID sugerido: <strong className="text-white">ID-{String(minors.length + 1).padStart(3, '0')}</strong></span>
+                    <span>Pulsera: <strong className="text-samu-red-400">Nominal SAMU</strong></span>
                   </div>
 
                   <button
                     type="submit"
-                    className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-98"
+                    className="w-full py-3 bg-samu-red-600 hover:bg-samu-red-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-98"
                   >
-                    Guardar Menor y Asignar Pulsera
+                    Guardar Menor y Vincular Pulsera
                   </button>
                 </form>
               </main>
@@ -1147,33 +1158,32 @@
           )}
 
           {/* ============================================================ */}
-          {/* PANTALLA 4: RECUENTO (CON LOS 6 TURNOS, ESCANER Y RESUMEN)   */}
+          {/* PANTALLA 4: RECUENTO CON IDENTIDAD SAMU                      */}
           {/* ============================================================ */}
           {navScreen === 'recount' && (
             <div className="flex-1 flex flex-col justify-between">
               
-              {/* HEADER CON BOTÓN AL MENÚ Y CONTROLADOR DEL TURNO */}
-              <header className="bg-slate-900/95 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40 px-3.5 pt-3 pb-2.5 shadow-sm">
+              <header className="bg-samu-navy-900/95 backdrop-blur-md border-b border-samu-navy-800 sticky top-0 z-40 px-3.5 pt-3 pb-2.5 shadow-md">
                 
-                {/* Fila 1: Regreso al Menú + Logo + Reloj */}
+                {/* Fila 1: Regreso al Menú + Logo SAMU + Reloj */}
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center space-x-2">
                     <button
                       type="button"
                       onClick={() => setNavScreen('menu')}
-                      className="text-[11px] font-bold text-blue-400 bg-slate-950 px-2 py-1 rounded border border-slate-800 flex items-center gap-1"
+                      className="text-[11px] font-bold text-samu-red-400 bg-samu-navy-950 px-2 py-1 rounded-lg border border-samu-navy-800 flex items-center gap-1"
                     >
                       ← Menú
                     </button>
                     <div>
-                      <span className="font-extrabold text-sm text-white">Recuento</span>
+                      <span className="font-extrabold text-sm text-white">Recuento SAMU</span>
                       <span className="text-[10px] text-slate-400 font-medium ml-1.5">
                         ({currentUser.name})
                       </span>
                     </div>
                   </div>
 
-                  <div className="font-mono text-xs font-semibold text-slate-300 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
+                  <div className="font-mono text-xs font-semibold text-slate-300 bg-samu-navy-950 px-2 py-0.5 rounded-lg border border-samu-navy-800">
                     {currentTimeStr || '12:00:00'}
                   </div>
                 </div>
@@ -1192,8 +1202,8 @@
                         }}
                         className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                           isActive
-                            ? 'bg-blue-600 text-white shadow-sm font-bold'
-                            : 'bg-slate-950 text-slate-400 hover:text-slate-200 border border-slate-800/80'
+                            ? 'bg-samu-navy-700 text-white shadow-sm font-bold border border-samu-red-500'
+                            : 'bg-samu-navy-950 text-slate-400 hover:text-slate-200 border border-samu-navy-800'
                         }`}
                       >
                         {m.label}
@@ -1203,35 +1213,33 @@
                 </div>
 
                 {/* Fila 3: KPI Resumido superior */}
-                <div className="mt-2 pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs">
+                <div className="mt-2 pt-2 border-t border-samu-navy-800 flex items-center justify-between text-xs">
                   <div className="flex items-center space-x-2">
                     <span className="text-slate-400 font-medium">Turno:</span>
-                    <span className="font-bold text-slate-200 uppercase">{MODES.find(m => m.id === currentMode)?.label}</span>
-                    <span className="text-[11px] text-slate-500 font-mono">({MODES.find(m => m.id === currentMode)?.schedule})</span>
+                    <span className="font-bold text-white uppercase">{MODES.find(m => m.id === currentMode)?.label}</span>
+                    <span className="text-[11px] text-slate-400 font-mono">({MODES.find(m => m.id === currentMode)?.schedule})</span>
                   </div>
                   <div className="flex items-center space-x-1.5 font-mono text-[11px]">
                     <span className="text-emerald-400 font-bold">{registeredCount}</span>
                     <span className="text-slate-500">/</span>
-                    <span className="text-slate-400">{totalCount}</span>
-                    <span className="text-slate-500">({percentage}%)</span>
+                    <span className="text-slate-300">{totalCount}</span>
+                    <span className="text-slate-400">({percentage}%)</span>
                   </div>
                 </div>
               </header>
 
-              {/* CUERPO PRINCIPAL DEL RECUENTO */}
               <main className="flex-1 px-3.5 py-3 flex flex-col space-y-3 pb-24">
 
                 {/* SUBVISTA A: ESCÁNER / ENTRADA */}
                 {recountView === 'scan' && (
                   <div className="flex-1 flex flex-col space-y-3">
                     
-                    {/* Caja de escáner */}
-                    <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-sm">
+                    <div className="bg-samu-navy-900 border border-samu-navy-800 rounded-xl p-3 shadow-sm">
                       <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-300">
                           Lector de Pulsera o Identificador
                         </span>
-                        <span className="text-[10px] text-slate-500 font-mono">Pistola HID / Teclado</span>
+                        <span className="text-[10px] text-slate-400 font-mono">Pistola HID / Teclado</span>
                       </div>
 
                       <form onSubmit={(e) => { e.preventDefault(); processScan(inputCode); }} className="relative">
@@ -1241,7 +1249,7 @@
                           value={inputCode}
                           onChange={(e) => setInputCode(e.target.value)}
                           placeholder="Pasa la pulsera o pulsa un menor abajo..."
-                          className="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 text-white font-mono text-sm px-3.5 py-3 rounded-lg outline-none placeholder:text-slate-500 transition-all pr-24"
+                          className="w-full bg-samu-navy-950 border border-samu-navy-800 focus:border-samu-red-500 text-white font-mono text-sm px-3.5 py-3 rounded-lg outline-none placeholder:text-slate-500 transition-all pr-24"
                           autoComplete="off"
                           autoCapitalize="characters"
                           spellCheck="false"
@@ -1259,26 +1267,26 @@
 
                         <button
                           type="submit"
-                          className="absolute right-1.5 top-1.5 bottom-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs uppercase px-3 rounded-md transition-colors"
+                          className="absolute right-1.5 top-1.5 bottom-1.5 bg-samu-red-600 hover:bg-samu-red-500 text-white font-bold text-xs uppercase px-3 rounded-md transition-colors shadow-sm"
                         >
                           Validar
                         </button>
                       </form>
 
-                      {/* Botones de prueba táctil (sin abrir teclado móvil) */}
-                      <div className="mt-3 pt-2.5 border-t border-slate-800/80">
+                      {/* Botones de prueba táctil */}
+                      <div className="mt-3 pt-2.5 border-t border-samu-navy-800">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-[11px] font-semibold text-slate-400">
+                          <span className="text-[11px] font-semibold text-slate-300">
                             Prueba rápida táctil:
                           </span>
-                          <span className="text-[10px] text-slate-500">Toca para registrar</span>
+                          <span className="text-[10px] text-slate-400">Toca para registrar</span>
                         </div>
 
                         <div className="grid grid-cols-3 gap-1.5">
                           <button
                             type="button"
                             onClick={() => processScan('ID-001')}
-                            className="p-2 rounded-lg bg-slate-950 border border-amber-500/40 hover:border-amber-400 text-left transition-all active:scale-95"
+                            className="p-2 rounded-lg bg-samu-navy-950 border border-amber-500/40 hover:border-amber-400 text-left transition-all active:scale-95"
                           >
                             <div className="text-[10px] font-mono font-bold text-amber-400">ID-001 (Celíaco)</div>
                             <div className="text-xs font-semibold text-slate-200 truncate">Juan Pérez</div>
@@ -1288,7 +1296,7 @@
                           <button
                             type="button"
                             onClick={() => processScan('ID-002')}
-                            className="p-2 rounded-lg bg-slate-950 border border-slate-700/80 hover:border-slate-500 text-left transition-all active:scale-95"
+                            className="p-2 rounded-lg bg-samu-navy-950 border border-samu-navy-800 hover:border-slate-500 text-left transition-all active:scale-95"
                           >
                             <div className="text-[10px] font-mono font-bold text-slate-400">ID-002 (Ordinario)</div>
                             <div className="text-xs font-semibold text-slate-200 truncate">Sofía Gómez</div>
@@ -1298,9 +1306,9 @@
                           <button
                             type="button"
                             onClick={() => processScan(minors[0]?.id || 'ID-004')}
-                            className="p-2 rounded-lg bg-slate-950 border border-blue-500/40 hover:border-blue-400 text-left transition-all active:scale-95"
+                            className="p-2 rounded-lg bg-samu-navy-950 border border-samu-red-500/40 hover:border-samu-red-400 text-left transition-all active:scale-95"
                           >
-                            <div className="text-[10px] font-mono font-bold text-blue-400">{minors[0]?.id} (Último)</div>
+                            <div className="text-[10px] font-mono font-bold text-samu-red-400">{minors[0]?.id} (Último)</div>
                             <div className="text-xs font-semibold text-slate-200 truncate">{minors[0]?.name}</div>
                             <div className="text-[9px] text-slate-400 font-mono mt-0.5">Reciente</div>
                           </button>
@@ -1310,24 +1318,24 @@
 
                     {/* Ficha dinámica de feedback */}
                     {feedback ? (
-                      <div className={`rounded-xl border p-4 shadow-lg transition-all ${
+                      <div className={`rounded-xl border p-4 shadow-xl transition-all ${
                         feedback.status === 'success' 
-                          ? 'bg-slate-900 border-emerald-500/80' 
+                          ? 'bg-samu-navy-900 border-emerald-500/80 shadow-emerald-950/30' 
                           : feedback.status === 'duplicate'
-                          ? 'bg-slate-900 border-rose-500/80 ring-1 ring-rose-500/40'
-                          : 'bg-slate-900 border-amber-500/80'
+                          ? 'bg-samu-navy-900 border-samu-red-500/90 ring-2 ring-samu-red-500/40 shadow-rose-950/40'
+                          : 'bg-samu-navy-900 border-amber-500/80 shadow-amber-950/30'
                       }`}>
                         <div className="flex items-start justify-between">
                           <div className="flex items-center space-x-2.5">
                             <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm ${
                               feedback.status === 'success' ? 'bg-emerald-500 text-slate-950' :
-                              feedback.status === 'duplicate' ? 'bg-rose-500 text-white' : 'bg-amber-500 text-slate-950'
+                              feedback.status === 'duplicate' ? 'bg-samu-red-600 text-white' : 'bg-amber-500 text-slate-950'
                             }`}>
                               {feedback.status === 'success' ? '✓' : '!'}
                             </div>
                             <div>
                               <span className={`text-[10px] font-bold uppercase tracking-wider ${
-                                feedback.status === 'success' ? 'text-emerald-400' : 'text-rose-400'
+                                feedback.status === 'success' ? 'text-emerald-400' : 'text-samu-red-400'
                               }`}>
                                 {feedback.status === 'success' ? 'Validación Correcta' : 'Aviso de Acceso'}
                               </span>
@@ -1340,35 +1348,35 @@
                           <button
                             type="button"
                             onClick={() => setFeedback(null)}
-                            className="text-slate-400 hover:text-white p-1 rounded bg-slate-800 text-xs"
+                            className="text-slate-400 hover:text-white p-1 rounded bg-samu-navy-950 text-xs"
                           >
                             ✕
                           </button>
                         </div>
 
                         {feedback.status === 'duplicate' && feedback.previousTime && (
-                          <div className="mt-3 p-3 bg-rose-500/10 border border-rose-500/40 rounded-lg text-center">
+                          <div className="mt-3 p-3 bg-samu-red-600/15 border border-samu-red-500/50 rounded-lg text-center">
                             <p className="text-xs text-rose-200">
                               Este menor ya fue registrado en el turno de <strong className="uppercase">{currentMode}</strong>:
                             </p>
-                            <p className="text-xl font-black font-mono text-rose-400 mt-0.5">
+                            <p className="text-xl font-black font-mono text-samu-red-400 mt-0.5">
                               {feedback.previousTime}
                             </p>
-                            <p className="text-[10px] text-rose-300/70 mt-0.5">
+                            <p className="text-[10px] text-rose-300/80 mt-0.5">
                               Fichado por: {feedback.registeredBy || 'Personal'}
                             </p>
                           </div>
                         )}
 
                         {feedback.minor && (
-                          <div className="mt-3 bg-slate-950 rounded-lg p-3 border border-slate-800">
+                          <div className="mt-3 bg-samu-navy-950 rounded-lg p-3 border border-samu-navy-800">
                             <div className="flex items-center space-x-2.5 mb-2">
-                              <div className="w-10 h-10 rounded-lg bg-slate-800 text-slate-200 flex items-center justify-center font-mono font-bold text-xs border border-slate-700">
+                              <div className="w-10 h-10 rounded-lg bg-samu-navy-850 text-white flex items-center justify-center font-mono font-bold text-xs border border-samu-navy-700">
                                 {feedback.minor.initials}
                               </div>
                               <div>
                                 <div className="flex items-center space-x-1.5">
-                                  <span className="font-mono text-[10px] font-bold text-blue-400 bg-blue-500/10 px-1 py-0.2 rounded border border-blue-500/20">
+                                  <span className="font-mono text-[10px] font-bold text-white bg-samu-navy-800 px-1 py-0.2 rounded border border-samu-navy-700">
                                     {feedback.minor.id}
                                   </span>
                                   <span className="text-[10px] font-mono text-slate-400">
@@ -1398,13 +1406,13 @@
                               </div>
                             )}
 
-                            <div className="mt-2.5 pt-2 border-t border-slate-800/80 grid grid-cols-2 gap-2 text-[11px]">
+                            <div className="mt-2.5 pt-2 border-t border-samu-navy-800 grid grid-cols-2 gap-2 text-[11px]">
                               <div>
-                                <span className="text-slate-500 block">Registrado Por:</span>
-                                <span className="font-medium text-slate-300">{feedback.registeredBy || currentUser.name}</span>
+                                <span className="text-slate-400 block">Registrado Por:</span>
+                                <span className="font-medium text-slate-200">{feedback.registeredBy || currentUser.name}</span>
                               </div>
                               <div>
-                                <span className="text-slate-500 block">Hora de Registro:</span>
+                                <span className="text-slate-400 block">Hora de Registro:</span>
                                 <span className="font-mono font-bold text-emerald-400">{feedback.timestamp}</span>
                               </div>
                             </div>
@@ -1414,14 +1422,14 @@
                         <button
                           type="button"
                           onClick={() => setFeedback(null)}
-                          className="w-full mt-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-semibold text-slate-200 border border-slate-700 transition-colors"
+                          className="w-full mt-3 py-2 bg-samu-navy-800 hover:bg-samu-navy-700 rounded-lg text-xs font-semibold text-slate-200 border border-samu-navy-700 transition-colors"
                         >
                           Aceptar y continuar escaneo
                         </button>
                       </div>
                     ) : (
-                      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center bg-slate-900/40 rounded-xl border border-dashed border-slate-800">
-                        <div className="w-10 h-10 rounded-lg bg-slate-800/60 border border-slate-700 flex items-center justify-center text-slate-300 font-mono text-sm mb-2.5">
+                      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center bg-samu-navy-900/40 rounded-xl border border-dashed border-samu-navy-800">
+                        <div className="w-10 h-10 rounded-lg bg-samu-navy-850 border border-samu-navy-700 flex items-center justify-center text-slate-300 font-mono text-sm mb-2.5">
                           RF
                         </div>
                         <h3 className="text-sm font-semibold text-slate-200">
@@ -1439,20 +1447,19 @@
                 {recountView === 'summary' && (
                   <div className="flex-1 flex flex-col space-y-3">
                     
-                    {/* 3 KPIS INTERACTIVOS QUE FILTRAN AL CLICAR */}
                     <div className="grid grid-cols-3 gap-2">
                       <button
                         type="button"
                         onClick={() => setSummaryFilter('all')}
                         className={`p-2.5 rounded-xl border text-center transition-all ${
                           summaryFilter === 'all'
-                            ? 'bg-slate-800 border-blue-500 ring-2 ring-blue-500/30'
-                            : 'bg-slate-900 border-slate-800 hover:border-slate-700'
+                            ? 'bg-samu-navy-800 border-samu-red-500 ring-2 ring-samu-red-500/30'
+                            : 'bg-samu-navy-900 border-samu-navy-800 hover:border-slate-600'
                         }`}
                       >
                         <span className="text-[10px] uppercase font-bold text-slate-400 block">Total</span>
                         <p className="text-lg font-black text-white font-mono mt-0.5">{totalCount}</p>
-                        <span className="text-[9px] text-slate-500 block">Ver todos</span>
+                        <span className="text-[9px] text-slate-400 block">Ver todos</span>
                       </button>
 
                       <button
@@ -1461,7 +1468,7 @@
                         className={`p-2.5 rounded-xl border text-center transition-all ${
                           summaryFilter === 'passed'
                             ? 'bg-emerald-950/60 border-emerald-500 ring-2 ring-emerald-500/30'
-                            : 'bg-slate-900 border-slate-800 hover:border-emerald-500/40'
+                            : 'bg-samu-navy-900 border-samu-navy-800 hover:border-emerald-500/40'
                         }`}
                       >
                         <span className="text-[10px] uppercase font-bold text-emerald-400 block">Fichados</span>
@@ -1474,25 +1481,24 @@
                         onClick={() => setSummaryFilter('pending')}
                         className={`p-2.5 rounded-xl border text-center transition-all ${
                           summaryFilter === 'pending'
-                            ? 'bg-rose-950/60 border-rose-500 ring-2 ring-rose-500/30'
-                            : 'bg-slate-900 border-slate-800 hover:border-rose-500/40'
+                            ? 'bg-samu-red-700/40 border-samu-red-500 ring-2 ring-samu-red-500/30'
+                            : 'bg-samu-navy-900 border-samu-navy-800 hover:border-samu-red-500/40'
                         }`}
                       >
-                        <span className="text-[10px] uppercase font-bold text-rose-400 block">Pendientes</span>
-                        <p className="text-lg font-black text-rose-400 font-mono mt-0.5">{pendingCount}</p>
+                        <span className="text-[10px] uppercase font-bold text-samu-red-400 block">Pendientes</span>
+                        <p className="text-lg font-black text-samu-red-400 font-mono mt-0.5">{pendingCount}</p>
                         <span className="text-[9px] text-rose-300/70 block">Faltan</span>
                       </button>
                     </div>
 
-                    {/* Buscador */}
-                    <div className="bg-slate-900 border border-slate-800 rounded-xl p-2.5 space-y-2">
+                    <div className="bg-samu-navy-900 border border-samu-navy-800 rounded-xl p-2.5 space-y-2">
                       <div className="relative">
                         <input
                           type="text"
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
                           placeholder="Buscar por nombre, habitación o alergia..."
-                          className="w-full bg-slate-950 border border-slate-700 text-xs rounded-lg px-3 py-2 text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500"
+                          className="w-full bg-samu-navy-950 border border-samu-navy-800 text-xs rounded-lg px-3 py-2 text-white placeholder:text-slate-500 focus:outline-none focus:border-samu-red-500"
                         />
                         {searchQuery && (
                           <button
@@ -1513,7 +1519,7 @@
                           className={`text-[10px] font-bold px-2 py-0.5 rounded border transition-colors ${
                             summaryFilter === 'allergies'
                               ? 'bg-amber-500 text-slate-950 border-amber-400'
-                              : 'bg-slate-800 text-amber-300 border-amber-500/30'
+                              : 'bg-samu-navy-950 text-amber-300 border-amber-500/30'
                           }`}
                         >
                           Dietas / Alergias
@@ -1521,7 +1527,6 @@
                       </div>
                     </div>
 
-                    {/* Lista filtrada de residentes */}
                     <div className="flex-1 overflow-y-auto space-y-1.5 pr-0.5 max-h-[50vh]">
                       {minors
                         .filter((m) => {
@@ -1548,18 +1553,18 @@
                               key={kid.id}
                               className={`p-2.5 rounded-lg border transition-all ${
                                 isReg
-                                  ? 'bg-slate-900/80 border-emerald-500/40'
-                                  : 'bg-slate-900/40 border-slate-800'
+                                  ? 'bg-samu-navy-900/90 border-emerald-500/40'
+                                  : 'bg-samu-navy-900/40 border-samu-navy-800'
                               }`}
                             >
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center space-x-2.5 truncate mr-2">
-                                  <div className="w-8 h-8 rounded bg-slate-800 text-slate-200 flex-shrink-0 flex items-center justify-center font-mono font-bold text-[11px] border border-slate-700">
+                                  <div className="w-8 h-8 rounded bg-samu-navy-850 text-white flex-shrink-0 flex items-center justify-center font-mono font-bold text-[11px] border border-samu-navy-700">
                                     {kid.initials}
                                   </div>
                                   <div className="truncate">
                                     <div className="flex items-center space-x-1.5">
-                                      <span className="font-mono text-[9px] font-bold text-slate-400 bg-slate-800 px-1 py-0.2 rounded">
+                                      <span className="font-mono text-[9px] font-bold text-slate-300 bg-samu-navy-950 px-1 py-0.2 rounded border border-samu-navy-800">
                                         {kid.id}
                                       </span>
                                       <h4 className="font-bold text-xs text-white truncate">
@@ -1578,7 +1583,7 @@
                                   className={`px-2.5 py-1 rounded text-xs font-bold transition-all flex-shrink-0 ${
                                     isReg
                                       ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30'
-                                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
+                                      : 'bg-samu-navy-800 text-slate-200 hover:bg-samu-navy-700 border border-samu-navy-700'
                                   }`}
                                 >
                                   {isReg ? '✓ Fichado' : '+ Fichar'}
@@ -1586,14 +1591,14 @@
                               </div>
 
                               {kid.medical && (
-                                <div className="mt-1.5 pt-1 border-t border-slate-800/80 flex items-center space-x-1 text-[10px] font-semibold text-amber-300">
+                                <div className="mt-1.5 pt-1 border-t border-samu-navy-800 flex items-center space-x-1 text-[10px] font-semibold text-amber-300">
                                   <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0"></span>
                                   <span className="truncate">{kid.medical.title}</span>
                                 </div>
                               )}
 
                               {isReg && record.timestamp && (
-                                <div className="mt-1 text-[9px] font-mono text-emerald-400/80 text-right">
+                                <div className="mt-1 text-[9px] font-mono text-emerald-400/90 text-right">
                                   Fichado a las {record.timestamp} por {record.registeredBy || currentUser.name}
                                 </div>
                               )}
@@ -1606,7 +1611,7 @@
                       <button
                         type="button"
                         onClick={handleResetSession}
-                        className="flex-1 py-2 px-3 rounded-lg bg-rose-950/30 hover:bg-rose-900/40 text-rose-300 text-xs font-semibold border border-rose-800/40 transition-colors"
+                        className="flex-1 py-2 px-3 rounded-lg bg-samu-red-600/20 hover:bg-samu-red-600/30 text-rose-300 text-xs font-semibold border border-samu-red-500/40 transition-colors"
                       >
                         Reiniciar {MODES.find(m => m.id === currentMode)?.label}
                       </button>
@@ -1614,9 +1619,9 @@
                       <button
                         type="button"
                         onClick={() => {
-                          alert(`Informe del turno ${MODES.find(m => m.id === currentMode)?.label} (${currentUser.name}):\nRegistrados: ${registeredCount}\nPendientes: ${pendingCount}\nTotal: ${totalCount}`);
+                          alert(`Informe del turno ${MODES.find(m => m.id === currentMode)?.label} (${currentUser.name} - SAMU):\nRegistrados: ${registeredCount}\nPendientes: ${pendingCount}\nTotal: ${totalCount}`);
                         }}
-                        className="py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700"
+                        className="py-2 px-3 rounded-lg bg-samu-navy-800 hover:bg-samu-navy-700 text-slate-200 text-xs font-semibold border border-samu-navy-700"
                       >
                         Exportar
                       </button>
@@ -1625,16 +1630,15 @@
                 )}
               </main>
 
-              {/* BARRA INFERIOR DE NAVEGACIÓN DENTRO DE RECUENTO */}
-              <nav className="fixed bottom-0 left-0 right-0 bg-slate-950/95 backdrop-blur-lg border-t border-slate-800 px-6 py-2 z-50 max-w-md mx-auto">
+              <nav className="fixed bottom-0 left-0 right-0 bg-samu-navy-950/95 backdrop-blur-lg border-t border-samu-navy-800 px-6 py-2 z-50 max-w-md mx-auto">
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
                     onClick={() => setRecountView('scan')}
                     className={`py-2 px-3 rounded-lg text-xs font-bold transition-all text-center ${
                       recountView === 'scan'
-                        ? 'bg-blue-600 text-white shadow-sm'
-                        : 'text-slate-400 hover:text-slate-200 bg-slate-900/60 border border-slate-800'
+                        ? 'bg-samu-navy-700 text-white shadow-sm border border-samu-red-500'
+                        : 'text-slate-400 hover:text-slate-200 bg-samu-navy-900/60 border border-samu-navy-800'
                     }`}
                   >
                     Lector / Entrada
@@ -1645,8 +1649,8 @@
                     onClick={() => setRecountView('summary')}
                     className={`py-2 px-3 rounded-lg text-xs font-bold transition-all text-center relative ${
                       recountView === 'summary'
-                        ? 'bg-blue-600 text-white shadow-sm'
-                        : 'text-slate-400 hover:text-slate-200 bg-slate-900/60 border border-slate-800'
+                        ? 'bg-samu-navy-700 text-white shadow-sm border border-samu-red-500'
+                        : 'text-slate-400 hover:text-slate-200 bg-samu-navy-900/60 border border-samu-navy-800'
                     }`}
                   >
                     <span>Resumen ({registeredCount})</span>
