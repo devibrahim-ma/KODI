@@ -1,18 +1,27 @@
+export const MODES = [
+  { id: 'desayuno', label: 'Desayuno', schedule: '08:00 - 09:30' },
+  { id: 'mediodia', label: 'Medio Día', schedule: '11:30 - 12:30' },
+  { id: 'comida', label: 'Comida', schedule: '13:30 - 15:30' },
+  { id: 'merienda', label: 'Merienda', schedule: '17:30 - 18:30' },
+  { id: 'cena', label: 'Cena', schedule: '20:30 - 22:00' },
+  { id: 'moviles', label: 'Móviles', schedule: 'Control y Custodia' }
+];
+
 export const INITIAL_MINORS = [
   {
     id: 'ID-001',
     wristband: 'PUL-8491',
     name: 'Juan Pérez Morales',
     age: 12,
-    zone: 'Pabellón A - Hab. 101',
+    zone: 'Pabellón A · Hab. 101',
     monitor: 'Carlos Ruiz',
     phoneModel: 'Xiaomi Redmi Note 11',
-    avatar: '👦🏻',
+    initials: 'JP',
     medical: {
       hasAlert: true,
       type: 'Alergia Alimentaria',
-      title: '🌾 CELÍACO ESTRICTO',
-      description: 'Menú 100% sin gluten. Contaminación cruzada estricta.',
+      title: 'CELÍACO ESTRICTO (SIN GLUTEN)',
+      description: 'Control estricto de trazas y contaminación cruzada.',
       severity: 'high'
     }
   },
@@ -21,10 +30,10 @@ export const INITIAL_MINORS = [
     wristband: 'PUL-3920',
     name: 'Sofía Gómez Ruiz',
     age: 14,
-    zone: 'Pabellón B - Hab. 204',
+    zone: 'Pabellón B · Hab. 204',
     monitor: 'Laura Sánchez',
-    phoneModel: 'iPhone 12 Azul',
-    avatar: '👧🏼',
+    phoneModel: 'iPhone 12',
+    initials: 'SG',
     medical: null
   },
   {
@@ -32,15 +41,15 @@ export const INITIAL_MINORS = [
     wristband: 'PUL-5512',
     name: 'Mohamed Amine Dahbi',
     age: 13,
-    zone: 'Pabellón A - Hab. 103',
+    zone: 'Pabellón A · Hab. 103',
     monitor: 'Carlos Ruiz',
     phoneModel: 'Samsung Galaxy A33',
-    avatar: '👦🏽',
+    initials: 'MA',
     medical: {
       hasAlert: true,
-      type: 'Dieta Religiosa / Cultural',
-      title: '🥩 MENÚ HALAL',
-      description: 'Carne certificada Halal. Cero carne o derivados de cerdo.',
+      type: 'Dieta Cultural',
+      title: 'MENÚ HALAL CERTIFICADO',
+      description: 'Sin carne de cerdo ni derivados no certificados.',
       severity: 'medium'
     }
   },
@@ -49,15 +58,15 @@ export const INITIAL_MINORS = [
     wristband: 'PUL-1092',
     name: 'Lucas Silva Da Costa',
     age: 11,
-    zone: 'Pabellón A - Hab. 101',
+    zone: 'Pabellón A · Hab. 101',
     monitor: 'Carlos Ruiz',
     phoneModel: 'Motorola Moto G52',
-    avatar: '👦🏻',
+    initials: 'LS',
     medical: {
       hasAlert: true,
-      type: 'Alergia Crítica',
-      title: '🥜 ALERGIA SEVERA FRUTOS SECOS',
-      description: 'Riesgo de anafilaxia. Auto-inyector EpiPen en botiquín central.',
+      type: 'Alerta Crítica',
+      title: 'ALERGIA SEVERA A FRUTOS SECOS',
+      description: 'Riesgo de anafilaxia. Dispone de auto-inyector EpiPen en enfermería.',
       severity: 'high'
     }
   },
@@ -66,10 +75,10 @@ export const INITIAL_MINORS = [
     wristband: 'PUL-7734',
     name: 'Elena Vega Navarro',
     age: 15,
-    zone: 'Pabellón B - Hab. 201',
+    zone: 'Pabellón B · Hab. 201',
     monitor: 'Ana Beltrán',
-    phoneModel: 'Samsung Galaxy S20 FE',
-    avatar: '👧🏻',
+    phoneModel: 'Samsung S20 FE',
+    initials: 'EV',
     medical: null
   },
   {
@@ -77,15 +86,15 @@ export const INITIAL_MINORS = [
     wristband: 'PUL-4481',
     name: 'Mateo Romero Castro',
     age: 10,
-    zone: 'Pabellón A - Hab. 105',
+    zone: 'Pabellón A · Hab. 105',
     monitor: 'Carlos Ruiz',
     phoneModel: 'Realme C55',
-    avatar: '👦🏼',
+    initials: 'MR',
     medical: {
       hasAlert: true,
       type: 'Intolerancia Severa',
-      title: '🥛 INTOLERANTE A LA LACTOSA',
-      description: 'Lácteos sin lactosa o bebidas vegetales exclusivamente.',
+      title: 'INTOLERANCIA A LA LACTOSA',
+      description: 'Suministrar bebidas vegetales y menús sin derivados lácteos.',
       severity: 'medium'
     }
   },
@@ -94,10 +103,10 @@ export const INITIAL_MINORS = [
     wristband: 'PUL-2299',
     name: 'Lucía Santos Blanco',
     age: 13,
-    zone: 'Pabellón B - Hab. 203',
+    zone: 'Pabellón B · Hab. 203',
     monitor: 'Laura Sánchez',
-    phoneModel: 'iPhone 11 Negro',
-    avatar: '👧🏽',
+    phoneModel: 'iPhone 11',
+    initials: 'LS',
     medical: null
   },
   {
@@ -105,15 +114,15 @@ export const INITIAL_MINORS = [
     wristband: 'PUL-9811',
     name: 'Daniel Martínez Soler',
     age: 12,
-    zone: 'Pabellón A - Hab. 104',
+    zone: 'Pabellón A · Hab. 104',
     monitor: 'Carlos Ruiz',
     phoneModel: 'Oppo A78',
-    avatar: '👦🏻',
+    initials: 'DM',
     medical: {
       hasAlert: true,
       type: 'Alergia Alimentaria',
-      title: '🐟 ALERGIA PESCADO Y MARISCO',
-      description: 'Sustituir por carne magra o legumbres.',
+      title: 'ALERGIA A PESCADO Y MARISCO',
+      description: 'Sustituir por proteínas alternativas verificadas.',
       severity: 'high'
     }
   },
@@ -122,15 +131,15 @@ export const INITIAL_MINORS = [
     wristband: 'PUL-6632',
     name: 'Ainhoa García Ibáñez',
     age: 14,
-    zone: 'Pabellón B - Hab. 204',
+    zone: 'Pabellón B · Hab. 204',
     monitor: 'Ana Beltrán',
     phoneModel: 'Xiaomi 12 Lite',
-    avatar: '👧🏼',
+    initials: 'AG',
     medical: {
       hasAlert: true,
-      type: 'Condición Médica',
-      title: '💉 DIABÉTICA TIPO 1',
-      description: 'Control de glucemia antes de cada comida. Sensor Freestyle.',
+      type: 'Control Clínico',
+      title: 'DIABETES TIPO 1 (CONTROL PREVIO)',
+      description: 'Revisión obligatoria de glucemia previa con monitor antes de la ingesta.',
       severity: 'high'
     }
   },
@@ -139,15 +148,15 @@ export const INITIAL_MINORS = [
     wristband: 'PUL-3145',
     name: 'Youssef Benali',
     age: 11,
-    zone: 'Pabellón A - Hab. 102',
+    zone: 'Pabellón A · Hab. 102',
     monitor: 'Laura Sánchez',
     phoneModel: 'Redmi 10C',
-    avatar: '👦🏽',
+    initials: 'YB',
     medical: {
       hasAlert: true,
-      type: 'Dieta Religiosa / Cultural',
-      title: '🥩 MENÚ HALAL',
-      description: 'Sin cerdo ni grasas animales no halal.',
+      type: 'Dieta Cultural',
+      title: 'MENÚ HALAL CERTIFICADO',
+      description: 'Carne y productos conformes a normativa Halal.',
       severity: 'medium'
     }
   },
@@ -156,15 +165,15 @@ export const INITIAL_MINORS = [
     wristband: 'PUL-8821',
     name: 'Martina Fernández Díaz',
     age: 16,
-    zone: 'Pabellón B - Hab. 202',
+    zone: 'Pabellón B · Hab. 202',
     monitor: 'Ana Beltrán',
-    phoneModel: 'iPhone 13 Rosa',
-    avatar: '👧🏻',
+    phoneModel: 'iPhone 13',
+    initials: 'MF',
     medical: {
       hasAlert: true,
-      type: 'Preferencia Dietética',
-      title: '🥗 VEGETARIANA ESTRICTA',
-      description: 'Menú ovo-lacto-vegetariano garantizado.',
+      type: 'Régimen Dietético',
+      title: 'DIETA VEGETARIANA',
+      description: 'Menú ovo-lacto-vegetariano estricto.',
       severity: 'medium'
     }
   },
@@ -173,10 +182,10 @@ export const INITIAL_MINORS = [
     wristband: 'PUL-5003',
     name: 'Pau Costa Rovira',
     age: 12,
-    zone: 'Pabellón A - Hab. 105',
+    zone: 'Pabellón A · Hab. 105',
     monitor: 'Carlos Ruiz',
     phoneModel: 'Poco X5 Pro',
-    avatar: '👦🏼',
+    initials: 'PC',
     medical: null
   },
   {
@@ -184,15 +193,15 @@ export const INITIAL_MINORS = [
     wristband: 'PUL-1944',
     name: 'Carmen Delgado Ortiz',
     age: 13,
-    zone: 'Pabellón B - Hab. 205',
+    zone: 'Pabellón B · Hab. 205',
     monitor: 'Laura Sánchez',
     phoneModel: 'Samsung Galaxy A14',
-    avatar: '👧🏼',
+    initials: 'CD',
     medical: {
       hasAlert: true,
       type: 'Alergia Alimentaria',
-      title: '🥚 ALERGIA AL HUEVO',
-      description: 'Revisar trazas en masas, empanados y postres.',
+      title: 'ALERGIA AL HUEVO',
+      description: 'Prohibición de alimentos con huevo o trazas de ovoproductos.',
       severity: 'high'
     }
   },
@@ -201,10 +210,10 @@ export const INITIAL_MINORS = [
     wristband: 'PUL-7210',
     name: 'Alejandro Moreno Gil',
     age: 15,
-    zone: 'Pabellón A - Hab. 103',
+    zone: 'Pabellón A · Hab. 103',
     monitor: 'Carlos Ruiz',
     phoneModel: 'Xiaomi Redmi 12',
-    avatar: '👦🏻',
+    initials: 'AM',
     medical: null
   },
   {
@@ -212,22 +221,16 @@ export const INITIAL_MINORS = [
     wristband: 'PUL-6091',
     name: 'Salma Khattabi',
     age: 10,
-    zone: 'Pabellón B - Hab. 201',
+    zone: 'Pabellón B · Hab. 201',
     monitor: 'Ana Beltrán',
     phoneModel: 'Motorola E22',
-    avatar: '👧🏽',
+    initials: 'SK',
     medical: {
       hasAlert: true,
       type: 'Dieta Combinada',
-      title: '🥩 HALAL + 🥛 SIN LACTOSA',
-      description: 'Dieta Halal y totalmente libre de lácteos.',
+      title: 'HALAL + EXENTO DE LACTOSA',
+      description: 'Doble restricción: Halal estricto y sin derivados lácteos.',
       severity: 'high'
     }
   }
-];
-
-export const MODES = [
-  { id: 'comida', label: 'Comida', icon: '🍽️', color: 'text-emerald-400', subtitle: 'Servicio de Almuerzo' },
-  { id: 'merienda', label: 'Merienda', icon: '🍎', color: 'text-amber-400', subtitle: 'Entrega de Merienda' },
-  { id: 'moviles', label: 'Móviles', icon: '📱', color: 'text-indigo-400', subtitle: 'Control Entrega / Recogida' }
 ];

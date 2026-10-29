@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Search, X, Check, Plus, Trash2, Download, AlertTriangle } from 'lucide-react';
 import { MODES } from '../data/mockMinors';
 
 export function SummaryDashboard({
@@ -10,196 +9,179 @@ export function SummaryDashboard({
   onResetSession,
 }) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState('all'); // 'all' | 'passed' | 'pending' | 'allergies'
+  const [summaryFilter, setSummaryFilter] = useState('all'); // 'all' | 'passed' | 'pending' | 'allergies'
 
   const registeredCount = Object.keys(activeRecords).length;
   const totalCount = minors.length;
+  const pendingCount = totalCount - registeredCount;
 
   const filteredMinors = minors.filter((m) => {
-    const isRegistered = !!activeRecords[m.id];
+    const isReg = !!activeRecords[m.id];
+    if (summaryFilter === 'passed' && !isReg) return false;
+    if (summaryFilter === 'pending' && isReg) return false;
+    if (summaryFilter === 'allergies' && !m.medical) return false;
 
-    // Filter type check
-    if (filterType === 'passed' && !isRegistered) return false;
-    if (filterType === 'pending' && isRegistered) return false;
-    if (filterType === 'allergies' && !m.medical) return false;
-
-    // Search query check
     if (!searchTerm) return true;
     const q = searchTerm.toLowerCase();
     return (
       m.name.toLowerCase().includes(q) ||
       m.id.toLowerCase().includes(q) ||
       m.zone.toLowerCase().includes(q) ||
-      m.monitor.toLowerCase().includes(q) ||
       (m.medical && m.medical.title.toLowerCase().includes(q))
     );
   });
 
   return (
     <div className="flex-1 flex flex-col space-y-3">
-      {/* SEARCH AND FILTERS */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-3 shadow-lg">
+      {/* 3 KPIS INTERACTIVOS: AL CLICAR FILTRAN DIRECTAMENTE */}
+      <div className="grid grid-cols-3 gap-2">
+        {/* KPI: TOTAL */}
+        <button
+          type="button"
+          onClick={() => setSummaryFilter('all')}
+          className={`p-2.5 rounded-xl border text-center transition-all ${
+            summaryFilter === 'all'
+              ? 'bg-slate-800 border-blue-500 ring-2 ring-blue-500/30'
+              : 'bg-slate-900 border-slate-800 hover:border-slate-700'
+          }`}
+        >
+          <span className="text-[10px] uppercase font-bold text-slate-400 block">Total</span>
+          <p className="text-lg font-black text-white font-mono mt-0.5">{totalCount}</p>
+          <span className="text-[9px] text-slate-500 block">Ver todos</span>
+        </button>
+
+        {/* KPI: PASADOS / FICHADOS */}
+        <button
+          type="button"
+          onClick={() => setSummaryFilter('passed')}
+          className={`p-2.5 rounded-xl border text-center transition-all ${
+            summaryFilter === 'passed'
+              ? 'bg-emerald-950/60 border-emerald-500 ring-2 ring-emerald-500/30'
+              : 'bg-slate-900 border-slate-800 hover:border-emerald-500/40'
+          }`}
+        >
+          <span className="text-[10px] uppercase font-bold text-emerald-400 block">Fichados</span>
+          <p className="text-lg font-black text-emerald-400 font-mono mt-0.5">{registeredCount}</p>
+          <span className="text-[9px] text-emerald-300/70 block">Solo pasados</span>
+        </button>
+
+        {/* KPI: PENDIENTES */}
+        <button
+          type="button"
+          onClick={() => setSummaryFilter('pending')}
+          className={`p-2.5 rounded-xl border text-center transition-all ${
+            summaryFilter === 'pending'
+              ? 'bg-rose-950/60 border-rose-500 ring-2 ring-rose-500/30'
+              : 'bg-slate-900 border-slate-800 hover:border-rose-500/40'
+          }`}
+        >
+          <span className="text-[10px] uppercase font-bold text-rose-400 block">Pendientes</span>
+          <p className="text-lg font-black text-rose-400 font-mono mt-0.5">{pendingCount}</p>
+          <span className="text-[9px] text-rose-300/70 block">Faltan</span>
+        </button>
+      </div>
+
+      {/* FILTROS ADICIONALES Y BUSCADOR */}
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-2.5 space-y-2">
         <div className="relative">
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Buscar por nombre, ID, habitación o alergia..."
-            className="w-full bg-slate-950 border border-slate-700 text-sm rounded-xl pl-9 pr-9 py-2.5 text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500"
+            placeholder="Buscar por nombre, habitación o alergia..."
+            className="w-full bg-slate-950 border border-slate-700 text-xs rounded-lg px-3 py-2 text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500"
           />
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
           {searchTerm && (
             <button
+              type="button"
               onClick={() => setSearchTerm('')}
-              className="absolute right-3 top-2.5 text-slate-400 hover:text-white"
+              className="absolute right-2.5 top-2 text-slate-400 hover:text-white text-xs"
             >
-              <X className="w-4 h-4" />
+              ✕
             </button>
           )}
         </div>
 
-        {/* SUMMARY STATS TILES */}
-        <div className="grid grid-cols-3 gap-2 mt-2.5">
-          <button
-            onClick={() => setFilterType('all')}
-            className={`p-2 rounded-xl border text-center transition-all ${
-              filterType === 'all'
-                ? 'bg-slate-800 border-blue-500 text-white'
-                : 'bg-slate-950 border-slate-800 text-slate-400'
-            }`}
-          >
-            <span className="text-[10px] uppercase font-semibold block">Total</span>
-            <p className="text-base font-black text-white">{totalCount}</p>
-          </button>
-
-          <button
-            onClick={() => setFilterType('passed')}
-            className={`p-2 rounded-xl border text-center transition-all ${
-              filterType === 'passed'
-                ? 'bg-emerald-950/80 border-emerald-500 text-emerald-300'
-                : 'bg-emerald-950/30 border-emerald-500/30 text-emerald-400'
-            }`}
-          >
-            <span className="text-[10px] uppercase font-semibold block">Fichados</span>
-            <p className="text-base font-black text-emerald-400">{registeredCount}</p>
-          </button>
-
-          <button
-            onClick={() => setFilterType('pending')}
-            className={`p-2 rounded-xl border text-center transition-all ${
-              filterType === 'pending'
-                ? 'bg-rose-950/80 border-rose-500 text-rose-300'
-                : 'bg-rose-950/30 border-rose-500/30 text-rose-300'
-            }`}
-          >
-            <span className="text-[10px] uppercase font-semibold block">Pendientes</span>
-            <p className="text-base font-black text-rose-300">{totalCount - registeredCount}</p>
-          </button>
-        </div>
-
-        {/* Filter pills */}
-        <div className="flex items-center gap-1.5 mt-2.5 pt-2 border-t border-slate-800/80 overflow-x-auto text-xs">
-          <span className="text-[11px] text-slate-400 font-medium">Filtro:</span>
-          <button
-            onClick={() => setFilterType('all')}
-            className={`px-2 py-0.5 rounded-full font-medium ${
-              filterType === 'all' ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'
-            }`}
-          >
-            Todos ({totalCount})
-          </button>
-          <button
-            onClick={() => setFilterType('passed')}
-            className={`px-2 py-0.5 rounded-full font-medium ${
-              filterType === 'passed' ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-400'
-            }`}
-          >
-            Fichados ({registeredCount})
-          </button>
-          <button
-            onClick={() => setFilterType('pending')}
-            className={`px-2 py-0.5 rounded-full font-medium ${
-              filterType === 'pending' ? 'bg-rose-600 text-white' : 'bg-slate-800 text-slate-400'
-            }`}
-          >
-            Faltan ({totalCount - registeredCount})
-          </button>
-          <button
-            onClick={() => setFilterType('allergies')}
-            className={`px-2 py-0.5 rounded-full font-medium flex items-center gap-1 ${
-              filterType === 'allergies' ? 'bg-amber-600 text-white' : 'bg-slate-800 text-slate-400'
-            }`}
-          >
-            <AlertTriangle className="w-3 h-3 text-amber-300" />
-            <span>Con Alergias</span>
-          </button>
+        <div className="flex items-center justify-between text-xs pt-1">
+          <span className="text-[11px] text-slate-400 font-medium">Filtro activo:</span>
+          <div className="flex gap-1">
+            <button
+              type="button"
+              onClick={() => setSummaryFilter('allergies')}
+              className={`text-[10px] font-bold px-2 py-0.5 rounded border transition-colors ${
+                summaryFilter === 'allergies'
+                  ? 'bg-amber-500 text-slate-950 border-amber-400'
+                  : 'bg-slate-800 text-amber-300 border-amber-500/30'
+              }`}
+            >
+              Dietas / Alergias
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* LIST OF MINORS */}
-      <div className="flex-1 overflow-y-auto space-y-2 pr-0.5 max-h-[50vh]">
+      {/* LISTADO DE RESIDENTES FILTRADO */}
+      <div className="flex-1 overflow-y-auto space-y-1.5 pr-0.5 max-h-[50vh]">
         {filteredMinors.length === 0 ? (
-          <div className="p-8 text-center text-slate-400 bg-slate-900/30 rounded-2xl border border-slate-800">
-            <p className="text-sm">No se encontraron menores con este criterio.</p>
+          <div className="p-8 text-center text-slate-400 bg-slate-900/40 rounded-xl border border-slate-800">
+            <p className="text-xs">No se encontraron residentes con este filtro.</p>
           </div>
         ) : (
           filteredMinors.map((kid) => {
             const record = activeRecords[kid.id];
-            const isRegistered = !!record;
+            const isReg = !!record;
 
             return (
               <div
                 key={kid.id}
-                className={`p-3 rounded-xl border transition-all ${
-                  isRegistered
-                    ? 'bg-slate-900/60 border-emerald-500/40 shadow-sm'
-                    : 'bg-slate-900/30 border-slate-800'
+                className={`p-2.5 rounded-lg border transition-all ${
+                  isReg
+                    ? 'bg-slate-900/80 border-emerald-500/40'
+                    : 'bg-slate-900/40 border-slate-800'
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2.5">
-                    <span className="text-2xl">{kid.avatar}</span>
-                    <div>
-                      <div className="flex items-center space-x-2">
-                        <span className="font-mono text-[10px] font-bold text-slate-400 bg-slate-800 px-1.5 py-0.2 rounded">
+                  <div className="flex items-center space-x-2.5 truncate mr-2">
+                    <div className="w-8 h-8 rounded bg-slate-800 text-slate-200 flex-shrink-0 flex items-center justify-center font-mono font-bold text-[11px] border border-slate-700">
+                      {kid.initials}
+                    </div>
+                    <div className="truncate">
+                      <div className="flex items-center space-x-1.5">
+                        <span className="font-mono text-[9px] font-bold text-slate-400 bg-slate-800 px-1 py-0.2 rounded">
                           {kid.id}
                         </span>
-                        <h4 className="font-bold text-sm text-white">
+                        <h4 className="font-bold text-xs text-white truncate">
                           {kid.name}
                         </h4>
                       </div>
-                      <p className="text-[11px] text-slate-400">
+                      <p className="text-[10px] text-slate-400 truncate mt-0.5">
                         {kid.zone} · Mon: {kid.monitor}
                       </p>
                     </div>
                   </div>
 
-                  {/* Status badge & toggle button */}
                   <button
+                    type="button"
                     onClick={() => onToggleMinor(kid.id)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-95 flex items-center space-x-1.5 ${
-                      isRegistered
-                        ? 'bg-emerald-500 text-slate-950 hover:bg-emerald-400'
+                    className={`px-2.5 py-1 rounded text-xs font-bold transition-all flex-shrink-0 ${
+                      isReg
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30'
                         : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
                     }`}
                   >
-                    {isRegistered ? <Check className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
-                    <span>{isRegistered ? 'Fichado' : 'Fichar'}</span>
+                    {isReg ? '✓ Fichado' : '+ Fichar'}
                   </button>
                 </div>
 
-                {/* Allergy badge if any */}
                 {kid.medical && (
-                  <div className="mt-2 pt-1.5 border-t border-slate-800/80 flex items-center space-x-1.5">
-                    <AlertTriangle className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
-                    <span className="text-[10px] font-bold text-amber-300 bg-amber-500/20 px-2 py-0.5 rounded border border-amber-500/30 truncate">
-                      {kid.medical.title}
-                    </span>
+                  <div className="mt-1.5 pt-1 border-t border-slate-800/80 flex items-center space-x-1 text-[10px] font-semibold text-amber-300">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0"></span>
+                    <span className="truncate">{kid.medical.title}</span>
                   </div>
                 )}
 
-                {isRegistered && record.timestamp && (
-                  <div className="mt-1 text-[10px] font-mono text-emerald-400/90 text-right">
+                {isReg && record.timestamp && (
+                  <div className="mt-1 text-[9px] font-mono text-emerald-400/80 text-right">
                     Registrado a las {record.timestamp}
                   </div>
                 )}
@@ -209,29 +191,29 @@ export function SummaryDashboard({
         )}
       </div>
 
-      {/* BOTTOM UTILITY ACTIONS */}
+      {/* ACCIONES DE CIERRE Y REINICIO */}
       <div className="pt-2 flex items-center gap-2">
         <button
+          type="button"
           onClick={onResetSession}
-          className="flex-1 py-2.5 px-3 rounded-xl bg-rose-950/40 hover:bg-rose-900/50 text-rose-300 text-xs font-semibold border border-rose-800/50 transition-colors flex items-center justify-center gap-1.5"
+          className="flex-1 py-2 px-3 rounded-lg bg-rose-950/30 hover:bg-rose-900/40 text-rose-300 text-xs font-semibold border border-rose-800/40 transition-colors"
         >
-          <Trash2 className="w-3.5 h-3.5" />
-          <span>Reiniciar {MODES.find((m) => m.id === currentMode)?.label}</span>
+          Reiniciar {MODES.find((m) => m.id === currentMode)?.label}
         </button>
 
         <button
+          type="button"
           onClick={() => {
             alert(
-              `Reporte exportado de ${MODES.find((m) => m.id === currentMode)?.label}:\n` +
-              `Total: ${totalCount}\n` +
-              `Presentes: ${registeredCount}\n` +
-              `Pendientes: ${totalCount - registeredCount}`
+              `Informe del turno ${MODES.find((m) => m.id === currentMode)?.label}:\n` +
+              `Registrados: ${registeredCount}\n` +
+              `Pendientes: ${pendingCount}\n` +
+              `Total: ${totalCount}`
             );
           }}
-          className="py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 flex items-center gap-1.5"
+          className="py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700"
         >
-          <Download className="w-3.5 h-3.5" />
-          <span>Exportar</span>
+          Exportar
         </button>
       </div>
     </div>

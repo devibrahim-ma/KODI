@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#0f172a">
+  <meta name="theme-color" content="#090d16">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>CampCheck - Kontrol Dinámico Infantil (KODI)</title>
+  <title>KODI — Control y Gestión Residencial</title>
   
-  <!-- Google Fonts: Inter -->
+  <!-- Typography: Inter & Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   
   <!-- Tailwind CSS Play CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -21,26 +21,24 @@
       theme: {
         extend: {
           fontFamily: {
-            sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+            sans: ['"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
           },
           colors: {
-            brand: {
-              50: '#eff6ff',
-              100: '#dbeafe',
-              500: '#3b82f6',
-              600: '#2563eb',
-              700: '#1d4ed8',
-              900: '#1e3a8a',
+            slate: {
+              950: '#070a12',
+              900: '#0e1422',
+              850: '#131b2e',
+              800: '#1b253d',
+              700: '#2a3756',
             },
-            status: {
-              success: '#10b981',
-              warning: '#f59e0b',
-              danger: '#ef4444',
+            kodi: {
+              50: '#eef6ff',
+              100: '#d9ebff',
+              500: '#2563eb',
+              600: '#1d4ed8',
+              700: '#1e40af',
             }
-          },
-          animation: {
-            'pulse-fast': 'pulse 0.7s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-            'bounce-short': 'bounce 0.6s ease-in-out 2',
           }
         }
       }
@@ -51,45 +49,37 @@
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   
-  <!-- Babel Standalone for JSX compilation in browser -->
+  <!-- Babel Standalone for in-browser execution -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <style>
-    /* Safe areas for modern mobile phones (iPhone notch / home bar) */
     body {
-      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
       padding-top: env(safe-area-inset-top);
       padding-bottom: env(safe-area-inset-bottom);
       -webkit-tap-highlight-color: transparent;
       user-select: none;
     }
-    input, textarea, select {
+    input, textarea {
       user-select: text;
     }
-    /* Custom scrollbar */
-    ::-webkit-scrollbar {
-      width: 4px;
-      height: 4px;
+    /* Hide horizontal scrollbar for clean app experience */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
     }
-    ::-webkit-scrollbar-track {
-      background: transparent;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: rgba(148, 163, 184, 0.3);
-      border-radius: 4px;
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
     }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 antialiased min-h-screen">
   <div id="root"></div>
 
-  <!-- Lucide Icons standalone bundle -->
-  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-
   <script type="text/babel">
-    const { useState, useEffect, useRef, useMemo } = React;
+    const { useState, useEffect, useRef } = React;
 
-    // Web Audio API Sound Synthesizer (Zero external audio file latency)
+    // Web Audio API Synthesizer (Zero-latency institutional beeps)
     const playAudioFeedback = (type) => {
       try {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -97,89 +87,93 @@
         const ctx = new AudioContext();
 
         if (type === 'success') {
-          // Energetic positive double chime (High notes)
+          // Double harmonic chime (High confidence)
           const now = ctx.currentTime;
           const osc1 = ctx.createOscillator();
           const gain1 = ctx.createGain();
           osc1.type = 'sine';
-          osc1.frequency.setValueAtTime(587.33, now); // D5
-          osc1.frequency.exponentialRampToValueAtTime(880, now + 0.12); // A5
-          gain1.gain.setValueAtTime(0.25, now);
-          gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+          osc1.frequency.setValueAtTime(659.25, now); // E5
+          osc1.frequency.exponentialRampToValueAtTime(880, now + 0.1); // A5
+          gain1.gain.setValueAtTime(0.2, now);
+          gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
           osc1.connect(gain1);
           gain1.connect(ctx.destination);
           osc1.start(now);
-          osc1.stop(now + 0.25);
+          osc1.stop(now + 0.22);
 
           const osc2 = ctx.createOscillator();
           const gain2 = ctx.createGain();
           osc2.type = 'triangle';
-          osc2.frequency.setValueAtTime(880, now + 0.12);
-          osc2.frequency.exponentialRampToValueAtTime(1174.66, now + 0.35); // D6
-          gain2.gain.setValueAtTime(0.2, now + 0.12);
-          gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+          osc2.frequency.setValueAtTime(880, now + 0.1);
+          osc2.frequency.exponentialRampToValueAtTime(1318.5, now + 0.3); // E6
+          gain2.gain.setValueAtTime(0.18, now + 0.1);
+          gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
           osc2.connect(gain2);
           gain2.connect(ctx.destination);
-          osc2.start(now + 0.12);
-          osc2.stop(now + 0.4);
+          osc2.start(now + 0.1);
+          osc2.stop(now + 0.35);
         } else if (type === 'duplicate' || type === 'error') {
-          // Warning low buzz sound
+          // Low reject pulse
           const now = ctx.currentTime;
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
           osc.type = 'sawtooth';
-          osc.frequency.setValueAtTime(220, now);
+          osc.frequency.setValueAtTime(240, now);
           osc.frequency.setValueAtTime(180, now + 0.12);
-          gain.gain.setValueAtTime(0.35, now);
-          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+          gain.gain.setValueAtTime(0.28, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
           osc.connect(gain);
           gain.connect(ctx.destination);
           osc.start(now);
-          osc.stop(now + 0.4);
+          osc.stop(now + 0.38);
         } else if (type === 'beep') {
-          // Simple scan click
           const now = ctx.currentTime;
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
           osc.type = 'sine';
-          osc.frequency.setValueAtTime(1046.5, now); // C6
-          gain.gain.setValueAtTime(0.15, now);
-          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+          osc.frequency.setValueAtTime(1174.66, now);
+          gain.gain.setValueAtTime(0.12, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
           osc.connect(gain);
           gain.connect(ctx.destination);
           osc.start(now);
-          osc.stop(now + 0.08);
+          osc.stop(now + 0.06);
         }
-      } catch (e) {
-        console.warn('Audio feedback error', e);
-      }
+      } catch (e) {}
     };
 
-    // Haptic vibration feedback
     const triggerHaptic = (pattern) => {
       if (window.navigator && window.navigator.vibrate) {
-        try {
-          window.navigator.vibrate(pattern);
-        } catch (e) {}
+        try { window.navigator.vibrate(pattern); } catch (e) {}
       }
     };
 
-    // Realistic Mock Dataset (15 minors with medical tags, rooms, monitors)
-    const INITIAL_MINORS = [
+    // 6 TURNOS OFICIALES SEGÚN REQUERIMIENTO
+    const MODES = [
+      { id: 'desayuno', label: 'Desayuno', schedule: '08:00 - 09:30' },
+      { id: 'mediodia', label: 'Medio Día', schedule: '11:30 - 12:30' },
+      { id: 'comida', label: 'Comida', schedule: '13:30 - 15:30' },
+      { id: 'merienda', label: 'Merienda', schedule: '17:30 - 18:30' },
+      { id: 'cena', label: 'Cena', schedule: '20:30 - 22:00' },
+      { id: 'moviles', label: 'Móviles', schedule: 'Control y Custodia' }
+    ];
+
+    // DATASET DE 15 MENORES CON PROTOCOLOS MÉDICOS Y DIETAS
+    const MINORS_DATA = [
       {
         id: 'ID-001',
         wristband: 'PUL-8491',
         name: 'Juan Pérez Morales',
         age: 12,
-        zone: 'Pabellón A - Hab. 101',
+        zone: 'Pabellón A · Hab. 101',
         monitor: 'Carlos Ruiz',
         phoneModel: 'Xiaomi Redmi Note 11',
-        avatar: '👦🏻',
+        initials: 'JP',
         medical: {
           hasAlert: true,
           type: 'Alergia Alimentaria',
-          title: '🌾 CELÍACO ESTRICTO',
-          description: 'Menú 100% sin gluten. Contaminación cruzada estricta.',
+          title: 'CELÍACO ESTRICTO (SIN GLUTEN)',
+          description: 'Control estricto de trazas y contaminación cruzada.',
           severity: 'high'
         }
       },
@@ -188,10 +182,10 @@
         wristband: 'PUL-3920',
         name: 'Sofía Gómez Ruiz',
         age: 14,
-        zone: 'Pabellón B - Hab. 204',
+        zone: 'Pabellón B · Hab. 204',
         monitor: 'Laura Sánchez',
-        phoneModel: 'iPhone 12 Azul',
-        avatar: '👧🏼',
+        phoneModel: 'iPhone 12',
+        initials: 'SG',
         medical: null
       },
       {
@@ -199,15 +193,15 @@
         wristband: 'PUL-5512',
         name: 'Mohamed Amine Dahbi',
         age: 13,
-        zone: 'Pabellón A - Hab. 103',
+        zone: 'Pabellón A · Hab. 103',
         monitor: 'Carlos Ruiz',
         phoneModel: 'Samsung Galaxy A33',
-        avatar: '👦🏽',
+        initials: 'MA',
         medical: {
           hasAlert: true,
-          type: 'Dieta Religiosa / Cultural',
-          title: '🥩 MENÚ HALAL',
-          description: 'Carne certificada Halal. Cero carne o derivados de cerdo.',
+          type: 'Dieta Cultural',
+          title: 'MENÚ HALAL CERTIFICADO',
+          description: 'Sin carne de cerdo ni derivados no certificados.',
           severity: 'medium'
         }
       },
@@ -216,15 +210,15 @@
         wristband: 'PUL-1092',
         name: 'Lucas Silva Da Costa',
         age: 11,
-        zone: 'Pabellón A - Hab. 101',
+        zone: 'Pabellón A · Hab. 101',
         monitor: 'Carlos Ruiz',
         phoneModel: 'Motorola Moto G52',
-        avatar: '👦🏻',
+        initials: 'LS',
         medical: {
           hasAlert: true,
-          type: 'Alergia Crítica',
-          title: '🥜 ALERGIA SEVERA FRUTOS SECOS',
-          description: 'Riesgo de anafilaxia. Auto-inyector EpiPen en botiquín central.',
+          type: 'Alerta Crítica',
+          title: 'ALERGIA SEVERA A FRUTOS SECOS',
+          description: 'Riesgo de anafilaxia. Dispone de auto-inyector EpiPen en enfermería.',
           severity: 'high'
         }
       },
@@ -233,10 +227,10 @@
         wristband: 'PUL-7734',
         name: 'Elena Vega Navarro',
         age: 15,
-        zone: 'Pabellón B - Hab. 201',
+        zone: 'Pabellón B · Hab. 201',
         monitor: 'Ana Beltrán',
-        phoneModel: 'Samsung Galaxy S20 FE',
-        avatar: '👧🏻',
+        phoneModel: 'Samsung S20 FE',
+        initials: 'EV',
         medical: null
       },
       {
@@ -244,15 +238,15 @@
         wristband: 'PUL-4481',
         name: 'Mateo Romero Castro',
         age: 10,
-        zone: 'Pabellón A - Hab. 105',
+        zone: 'Pabellón A · Hab. 105',
         monitor: 'Carlos Ruiz',
         phoneModel: 'Realme C55',
-        avatar: '👦🏼',
+        initials: 'MR',
         medical: {
           hasAlert: true,
           type: 'Intolerancia Severa',
-          title: '🥛 INTOLERANTE A LA LACTOSA',
-          description: 'Lácteos sin lactosa o bebidas vegetales exclusivamente.',
+          title: 'INTOLERANCIA A LA LACTOSA',
+          description: 'Suministrar bebidas vegetales y menús sin derivados lácteos.',
           severity: 'medium'
         }
       },
@@ -261,10 +255,10 @@
         wristband: 'PUL-2299',
         name: 'Lucía Santos Blanco',
         age: 13,
-        zone: 'Pabellón B - Hab. 203',
+        zone: 'Pabellón B · Hab. 203',
         monitor: 'Laura Sánchez',
-        phoneModel: 'iPhone 11 Negro',
-        avatar: '👧🏽',
+        phoneModel: 'iPhone 11',
+        initials: 'LS',
         medical: null
       },
       {
@@ -272,15 +266,15 @@
         wristband: 'PUL-9811',
         name: 'Daniel Martínez Soler',
         age: 12,
-        zone: 'Pabellón A - Hab. 104',
+        zone: 'Pabellón A · Hab. 104',
         monitor: 'Carlos Ruiz',
         phoneModel: 'Oppo A78',
-        avatar: '👦🏻',
+        initials: 'DM',
         medical: {
           hasAlert: true,
           type: 'Alergia Alimentaria',
-          title: '🐟 ALERGIA PESCADO Y MARISCO',
-          description: 'Sustituir por carne magra o legumbres.',
+          title: 'ALERGIA A PESCADO Y MARISCO',
+          description: 'Sustituir por proteínas alternativas verificadas.',
           severity: 'high'
         }
       },
@@ -289,15 +283,15 @@
         wristband: 'PUL-6632',
         name: 'Ainhoa García Ibáñez',
         age: 14,
-        zone: 'Pabellón B - Hab. 204',
+        zone: 'Pabellón B · Hab. 204',
         monitor: 'Ana Beltrán',
         phoneModel: 'Xiaomi 12 Lite',
-        avatar: '👧🏼',
+        initials: 'AG',
         medical: {
           hasAlert: true,
-          type: 'Condición Médica',
-          title: '💉 DIABÉTICA TIPO 1',
-          description: 'Control de glucemia antes de cada comida. Sensor Freestyle.',
+          type: 'Control Clínico',
+          title: 'DIABETES TIPO 1 (CONTROL PREVIO)',
+          description: 'Revisión obligatoria de glucemia previa con monitor antes de la ingesta.',
           severity: 'high'
         }
       },
@@ -306,15 +300,15 @@
         wristband: 'PUL-3145',
         name: 'Youssef Benali',
         age: 11,
-        zone: 'Pabellón A - Hab. 102',
+        zone: 'Pabellón A · Hab. 102',
         monitor: 'Laura Sánchez',
         phoneModel: 'Redmi 10C',
-        avatar: '👦🏽',
+        initials: 'YB',
         medical: {
           hasAlert: true,
-          type: 'Dieta Religiosa / Cultural',
-          title: '🥩 MENÚ HALAL',
-          description: 'Sin cerdo ni grasas animales no halal.',
+          type: 'Dieta Cultural',
+          title: 'MENÚ HALAL CERTIFICADO',
+          description: 'Carne y productos conformes a normativa Halal.',
           severity: 'medium'
         }
       },
@@ -323,15 +317,15 @@
         wristband: 'PUL-8821',
         name: 'Martina Fernández Díaz',
         age: 16,
-        zone: 'Pabellón B - Hab. 202',
+        zone: 'Pabellón B · Hab. 202',
         monitor: 'Ana Beltrán',
-        phoneModel: 'iPhone 13 Rosa',
-        avatar: '👧🏻',
+        phoneModel: 'iPhone 13',
+        initials: 'MF',
         medical: {
           hasAlert: true,
-          type: 'Preferencia Dietética',
-          title: '🥗 VEGETARIANA ESTRICTA',
-          description: 'Menú ovo-lacto-vegetariano garantizado.',
+          type: 'Régimen Dietético',
+          title: 'DIETA VEGETARIANA',
+          description: 'Menú ovo-lacto-vegetariano estricto.',
           severity: 'medium'
         }
       },
@@ -340,10 +334,10 @@
         wristband: 'PUL-5003',
         name: 'Pau Costa Rovira',
         age: 12,
-        zone: 'Pabellón A - Hab. 105',
+        zone: 'Pabellón A · Hab. 105',
         monitor: 'Carlos Ruiz',
         phoneModel: 'Poco X5 Pro',
-        avatar: '👦🏼',
+        initials: 'PC',
         medical: null
       },
       {
@@ -351,15 +345,15 @@
         wristband: 'PUL-1944',
         name: 'Carmen Delgado Ortiz',
         age: 13,
-        zone: 'Pabellón B - Hab. 205',
+        zone: 'Pabellón B · Hab. 205',
         monitor: 'Laura Sánchez',
         phoneModel: 'Samsung Galaxy A14',
-        avatar: '👧🏼',
+        initials: 'CD',
         medical: {
           hasAlert: true,
           type: 'Alergia Alimentaria',
-          title: '🥚 ALERGIA AL HUEVO',
-          description: 'Revisar trazas en masas, empanados y postres.',
+          title: 'ALERGIA AL HUEVO',
+          description: 'Prohibición de alimentos con huevo o trazas de ovoproductos.',
           severity: 'high'
         }
       },
@@ -368,10 +362,10 @@
         wristband: 'PUL-7210',
         name: 'Alejandro Moreno Gil',
         age: 15,
-        zone: 'Pabellón A - Hab. 103',
+        zone: 'Pabellón A · Hab. 103',
         monitor: 'Carlos Ruiz',
         phoneModel: 'Xiaomi Redmi 12',
-        avatar: '👦🏻',
+        initials: 'AM',
         medical: null
       },
       {
@@ -379,72 +373,47 @@
         wristband: 'PUL-6091',
         name: 'Salma Khattabi',
         age: 10,
-        zone: 'Pabellón B - Hab. 201',
+        zone: 'Pabellón B · Hab. 201',
         monitor: 'Ana Beltrán',
         phoneModel: 'Motorola E22',
-        avatar: '👧🏽',
+        initials: 'SK',
         medical: {
           hasAlert: true,
           type: 'Dieta Combinada',
-          title: '🥩 HALAL + 🥛 SIN LACTOSA',
-          description: 'Dieta Halal y totalmente libre de lácteos.',
+          title: 'HALAL + EXENTO DE LACTOSA',
+          description: 'Doble restricción: Halal estricto y sin derivados lácteos.',
           severity: 'high'
         }
       }
     ];
 
-    const MODES = [
-      { id: 'comida', label: 'Comida', icon: '🍽️', color: 'text-emerald-400', subtitle: 'Servicio de Almuerzo' },
-      { id: 'merienda', label: 'Merienda', icon: '🍎', color: 'text-amber-400', subtitle: 'Entrega de Merienda' },
-      { id: 'moviles', label: 'Móviles', icon: '📱', color: 'text-indigo-400', subtitle: 'Control Entrega / Recogida' }
-    ];
-
     function App() {
       const [currentMode, setCurrentMode] = useState('comida');
-      const [currentView, setCurrentView] = useState('scan'); // 'scan' | 'summary' | 'quick-list'
-      const [searchTerm, setSearchTerm] = useState('');
+      const [currentView, setCurrentView] = useState('scan'); // 'scan' | 'summary'
       const [inputCode, setInputCode] = useState('');
-      const [minors, setMinors] = useState(INITIAL_MINORS);
+      const [summaryFilter, setSummaryFilter] = useState('all'); // 'all' | 'passed' | 'pending' | 'allergies'
+      const [searchQuery, setSearchQuery] = useState('');
       
-      // Registered logs per mode: { [modeId]: { [minorId]: { timestamp, count } } }
-      const [records, setRecords] = useState(() => {
-        // Pre-populate with 2 checked-in kids for realistic initial demo look
-        return {
-          comida: {
-            'ID-002': { timestamp: '13:45:10', mode: 'comida' },
-            'ID-007': { timestamp: '13:50:22', mode: 'comida' }
-          },
-          merienda: {},
-          moviles: {
-            'ID-005': { timestamp: '10:15:00', mode: 'moviles' }
-          }
-        };
+      // Control de registros por turno
+      const [records, setRecords] = useState({
+        desayuno: { 'ID-001': { timestamp: '08:42:10' } },
+        mediodia: {},
+        comida: {
+          'ID-002': { timestamp: '13:45:10' },
+          'ID-007': { timestamp: '13:51:24' }
+        },
+        merienda: {},
+        cena: {},
+        moviles: { 'ID-005': { timestamp: '10:15:00' } }
       });
 
-      // Feedback state for current scan
-      const [feedback, setFeedback] = useState(null); 
-      // feedback shape: { status: 'success' | 'duplicate' | 'not_found', minor, timestamp, message, previousTime }
-
+      const [feedback, setFeedback] = useState(null);
       const [screenFlash, setScreenFlash] = useState(null); // 'green' | 'red'
-      const [autoFocusEnabled, setAutoFocusEnabled] = useState(true);
       const [currentTimeStr, setCurrentTimeStr] = useState('');
-      const [showDemoSelector, setShowDemoSelector] = useState(false);
 
       const inputRef = useRef(null);
 
-      // Keep focus on input for hardware bluetooth barcode readers
-      useEffect(() => {
-        if (autoFocusEnabled && currentView === 'scan') {
-          const timer = setTimeout(() => {
-            if (inputRef.current) {
-              inputRef.current.focus();
-            }
-          }, 150);
-          return () => clearTimeout(timer);
-        }
-      }, [autoFocusEnabled, currentView, feedback]);
-
-      // Live digital clock
+      // Reloj institucional en vivo
       useEffect(() => {
         const updateClock = () => {
           const now = new Date();
@@ -455,21 +424,20 @@
         return () => clearInterval(interval);
       }, []);
 
-      // Calculate stats for current mode
       const activeRecords = records[currentMode] || {};
       const registeredCount = Object.keys(activeRecords).length;
-      const totalCount = minors.length;
+      const totalCount = MINORS_DATA.length;
+      const pendingCount = totalCount - registeredCount;
       const percentage = Math.round((registeredCount / totalCount) * 100) || 0;
 
-      // Handle barcode or ID submission
+      // Proceso de escaneo o pulsación de prueba
       const processScan = (rawCode) => {
         const code = (rawCode || '').trim().toUpperCase();
         if (!code) return;
 
         playAudioFeedback('beep');
 
-        // Search minor by ID, Wristband or exact/partial name
-        const found = minors.find(m => 
+        const found = MINORS_DATA.find(m => 
           m.id.toUpperCase() === code ||
           m.wristband.toUpperCase() === code ||
           m.name.toUpperCase().includes(code)
@@ -479,52 +447,46 @@
         const timestampStr = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
         if (!found) {
-          // Not found feedback
           playAudioFeedback('error');
-          triggerHaptic([150, 100, 150]);
+          triggerHaptic([150, 80, 150]);
           setScreenFlash('red');
           setFeedback({
             status: 'not_found',
             code,
             timestamp: timestampStr,
-            message: `Código no reconocido: "${code}"`
+            message: `Código no registrado: "${code}"`
           });
-          setTimeout(() => setScreenFlash(null), 500);
+          setTimeout(() => setScreenFlash(null), 400);
           setInputCode('');
           return;
         }
 
-        // Check if already registered in current mode
         const previousRecord = activeRecords[found.id];
 
         if (previousRecord) {
-          // DUPLICATE ATTEMPT!
+          // DUPLICADO DETECTADO
           playAudioFeedback('duplicate');
-          triggerHaptic([300, 100, 300]);
+          triggerHaptic([250, 100, 250]);
           setScreenFlash('red');
           setFeedback({
             status: 'duplicate',
             minor: found,
             timestamp: timestampStr,
             previousTime: previousRecord.timestamp,
-            message: '¡ALERTA: Este menor ya ha fichado!'
+            message: 'REGISTRO PREVIO EXISTENTE'
           });
-          setTimeout(() => setScreenFlash(null), 600);
+          setTimeout(() => setScreenFlash(null), 500);
         } else {
-          // SUCCESSFUL SCAN!
+          // REGISTRO EXITOSO
           playAudioFeedback('success');
-          triggerHaptic([120]);
+          triggerHaptic([90]);
           setScreenFlash('green');
 
-          // Save to records
           setRecords(prev => ({
             ...prev,
             [currentMode]: {
               ...prev[currentMode],
-              [found.id]: {
-                timestamp: timestampStr,
-                mode: currentMode
-              }
+              [found.id]: { timestamp: timestampStr }
             }
           }));
 
@@ -532,35 +494,21 @@
             status: 'success',
             minor: found,
             timestamp: timestampStr,
-            message: currentMode === 'moviles' ? 'Móvil entregado / verificado' : 'Acceso registrado correctamente'
+            message: currentMode === 'moviles' ? 'Dispositivo verificado y registrado' : 'Acceso validado y registrado'
           });
-          setTimeout(() => setScreenFlash(null), 600);
+          setTimeout(() => setScreenFlash(null), 500);
         }
 
         setInputCode('');
-        
-        // Auto focus back for gun
-        setTimeout(() => {
-          if (inputRef.current) inputRef.current.focus();
-        }, 100);
+        // IMPORTANTE: NO llamamos a inputRef.current.focus() aquí para NO levantar el teclado en móviles
       };
 
-      const handleSubmit = (e) => {
+      const handleFormSubmit = (e) => {
         e.preventDefault();
         processScan(inputCode);
       };
 
-      const resetCurrentSession = () => {
-        if (confirm(`¿Reiniciar registros de ${MODES.find(m => m.id === currentMode)?.label}?`)) {
-          setRecords(prev => ({
-            ...prev,
-            [currentMode]: {}
-          }));
-          setFeedback(null);
-        }
-      };
-
-      const toggleManualMinor = (minorId) => {
+      const handleToggleManual = (minorId) => {
         const isRegistered = !!activeRecords[minorId];
         const now = new Date();
         const timestampStr = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -576,460 +524,433 @@
             ...prev,
             [currentMode]: {
               ...prev[currentMode],
-              [minorId]: { timestamp: timestampStr, mode: currentMode }
+              [minorId]: { timestamp: timestampStr }
             }
           }));
           playAudioFeedback('success');
         }
+        // NO enfocar input aquí para que no salte teclado móvil
+      };
+
+      const handleResetSession = () => {
+        const currentModeObj = MODES.find(m => m.id === currentMode);
+        if (confirm(`¿Reiniciar los registros de "${currentModeObj?.label}"?`)) {
+          setRecords(prev => ({
+            ...prev,
+            [currentMode]: {}
+          }));
+          setFeedback(null);
+        }
       };
 
       return (
-        <div className={`min-h-screen flex flex-col justify-between max-w-md mx-auto relative transition-colors duration-300 ${
-          screenFlash === 'green' ? 'ring-8 ring-emerald-500 bg-emerald-950/40' : 
-          screenFlash === 'red' ? 'ring-8 ring-rose-500 bg-rose-950/40' : ''
+        <div className={`min-h-screen flex flex-col justify-between max-w-md mx-auto relative transition-colors duration-200 ${
+          screenFlash === 'green' ? 'bg-emerald-950/20' : 
+          screenFlash === 'red' ? 'bg-rose-950/20' : ''
         }`}>
           
-          {/* TOP APP HEADER */}
-          <header className="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40 px-4 pt-3 pb-3 shadow-lg">
-            {/* Top row: Brand + Live Clock */}
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-brand-600 to-emerald-500 flex items-center justify-center shadow-md shadow-brand-500/20">
-                  <span className="text-white font-extrabold text-sm tracking-wider">KD</span>
+          {/* HEADER PRINCIPAL */}
+          <header className="bg-slate-900/95 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40 px-3.5 pt-3 pb-2.5 shadow-sm">
+            {/* Fila 1: Logo corporativo y reloj */}
+            <div className="flex items-center justify-between mb-2.5">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-black tracking-wider text-white text-xs border border-blue-400/30 shadow-sm">
+                  KD
                 </div>
                 <div>
-                  <h1 className="font-bold text-base leading-tight text-white flex items-center gap-1.5">
-                    CampCheck <span className="text-[10px] font-semibold tracking-wider uppercase px-1.5 py-0.5 rounded bg-brand-500/20 text-brand-400 border border-brand-500/30">KODI</span>
-                  </h1>
-                  <p className="text-[11px] text-slate-400">Kontrol Dinámico Infantil</p>
+                  <div className="flex items-center space-x-1.5">
+                    <span className="font-extrabold text-sm tracking-tight text-white">KODI</span>
+                    <span className="text-[10px] font-mono uppercase px-1 py-0.2 rounded bg-slate-800 text-slate-300 border border-slate-700">v1.2</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 font-medium">Control Residencial de Accesos</p>
                 </div>
               </div>
 
               <div className="text-right">
-                <div className="text-xs font-mono font-bold text-slate-300 bg-slate-800/80 px-2 py-0.5 rounded-md border border-slate-700/60 inline-flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <div className="font-mono text-xs font-semibold text-slate-300 bg-slate-950 px-2 py-1 rounded border border-slate-800 inline-flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                   {currentTimeStr || '12:00:00'}
                 </div>
               </div>
             </div>
 
-            {/* MODES SWITCHER TABS */}
-            <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-950/70 rounded-xl border border-slate-800">
+            {/* Fila 2: Selector de los 6 turnos requeridos (scroll horizontal fluido sin barra) */}
+            <div className="flex items-center space-x-1 overflow-x-auto no-scrollbar py-1">
               {MODES.map((m) => {
                 const isActive = currentMode === m.id;
                 return (
                   <button
                     key={m.id}
+                    type="button"
                     onClick={() => {
                       setCurrentMode(m.id);
                       setFeedback(null);
                     }}
-                    className={`flex items-center justify-center gap-1.5 py-2 px-1 rounded-lg text-xs font-bold transition-all duration-200 active:scale-95 ${
+                    className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                       isActive
-                        ? 'bg-gradient-to-r from-slate-800 to-slate-800/90 text-white shadow-md border border-slate-700/80 ring-1 ring-white/10'
-                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/50'
+                        ? 'bg-blue-600 text-white shadow-sm font-bold'
+                        : 'bg-slate-950 text-slate-400 hover:text-slate-200 border border-slate-800/80'
                     }`}
                   >
-                    <span className="text-sm">{m.icon}</span>
-                    <span>{m.label}</span>
+                    {m.label}
                   </button>
                 );
               })}
             </div>
 
-            {/* REALTIME METRICS COUNTER BAR */}
-            <div className="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center justify-between">
-              <div className="flex items-baseline gap-2">
-                <span className="text-xs font-semibold text-slate-400">Registrados:</span>
-                <span className="text-lg font-black text-emerald-400 tracking-tight">
-                  {registeredCount}
-                  <span className="text-xs text-slate-400 font-normal ml-1">/ {totalCount}</span>
-                </span>
+            {/* Fila 3: KPI Resumido superior */}
+            <div className="mt-2 pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs">
+              <div className="flex items-center space-x-2">
+                <span className="text-slate-400 font-medium">Turno:</span>
+                <span className="font-bold text-slate-200 uppercase">{MODES.find(m => m.id === currentMode)?.label}</span>
+                <span className="text-[11px] text-slate-500 font-mono">({MODES.find(m => m.id === currentMode)?.schedule})</span>
               </div>
-
-              {/* Progress bar pill */}
-              <div className="flex items-center gap-2">
-                <div className="w-24 bg-slate-800 rounded-full h-2.5 overflow-hidden border border-slate-700/60">
-                  <div
-                    className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-500 rounded-full"
-                    style={{ width: `${percentage}%` }}
-                  ></div>
-                </div>
-                <span className="text-[11px] font-bold text-slate-300 font-mono">{percentage}%</span>
+              <div className="flex items-center space-x-1.5 font-mono text-[11px]">
+                <span className="text-emerald-400 font-bold">{registeredCount}</span>
+                <span className="text-slate-500">/</span>
+                <span className="text-slate-400">{totalCount}</span>
+                <span className="text-slate-500">({percentage}%)</span>
               </div>
             </div>
           </header>
 
-          {/* MAIN CONTENT AREA */}
-          <main className="flex-1 px-4 py-3 flex flex-col space-y-3 pb-24">
+          {/* CUERPO PRINCIPAL */}
+          <main className="flex-1 px-3.5 py-3 flex flex-col space-y-3 pb-24">
 
-            {/* VIEW: SCANNER (PRIMARY VIEW) */}
+            {/* VISTA 1: ESCANEO Y ENTRADA */}
             {currentView === 'scan' && (
               <div className="flex-1 flex flex-col space-y-3">
                 
-                {/* SCANNER INPUT FORM */}
-                <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-3.5 shadow-xl backdrop-blur-sm">
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                      <span className="text-brand-400">⚡</span> Lector / Entrada Rápida
-                    </label>
-                    <button
-                      onClick={() => setAutoFocusEnabled(!autoFocusEnabled)}
-                      className={`text-[10px] px-2 py-0.5 rounded-full font-medium border transition-colors ${
-                        autoFocusEnabled 
-                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' 
-                          : 'bg-slate-800 text-slate-400 border-slate-700'
-                      }`}
-                    >
-                      {autoFocusEnabled ? '● Auto-foco ON (Pistola)' : '○ Foco Manual'}
-                    </button>
+                {/* CAJA DE ENTRADA MANUAL O PISTOLA */}
+                <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-sm">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                      Lector de Pulsera o Identificador
+                    </span>
+                    <span className="text-[10px] text-slate-500 font-mono">Pistola HID / Teclado</span>
                   </div>
 
-                  <form onSubmit={handleSubmit} className="relative">
-                    <div className="relative flex items-center">
-                      <input
-                        ref={inputRef}
-                        type="text"
-                        value={inputCode}
-                        onChange={(e) => setInputCode(e.target.value)}
-                        placeholder="Escanear pulsera o teclear ID..."
-                        className="w-full bg-slate-950 border-2 border-slate-700 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/20 text-white font-mono text-base px-4 py-3.5 rounded-xl outline-none placeholder:text-slate-500 transition-all tracking-wide"
-                        autoComplete="off"
-                        autoCapitalize="characters"
-                        spellCheck="false"
-                      />
-                      
-                      {inputCode && (
-                        <button
-                          type="button"
-                          onClick={() => setInputCode('')}
-                          className="absolute right-24 text-slate-400 hover:text-white p-1 text-sm"
-                        >
-                          ✕
-                        </button>
-                      )}
+                  <form onSubmit={handleFormSubmit} className="relative">
+                    <input
+                      ref={inputRef}
+                      type="text"
+                      value={inputCode}
+                      onChange={(e) => setInputCode(e.target.value)}
+                      placeholder="Pasa la pulsera o pulsa un menor abajo..."
+                      className="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 text-white font-mono text-sm px-3.5 py-3 rounded-lg outline-none placeholder:text-slate-500 transition-all pr-24"
+                      autoComplete="off"
+                      autoCapitalize="characters"
+                      spellCheck="false"
+                    />
 
-                      <button
-                        type="submit"
-                        className="absolute right-1.5 bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs uppercase tracking-wider px-4 py-2.5 rounded-lg active:scale-95 transition-all shadow-md flex items-center gap-1.5"
-                      >
-                        <span>Escanear</span>
-                        <span>➔</span>
-                      </button>
-                    </div>
-                  </form>
-
-                  {/* QUICK DEMO KIDS SELECTOR ACCORDION / TOGGLE */}
-                  <div className="mt-3 pt-2.5 border-t border-slate-800/80">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-semibold text-slate-400">
-                        🧪 Menores de prueba para demo táctil:
-                      </span>
+                    {inputCode && (
                       <button
                         type="button"
-                        onClick={() => setShowDemoSelector(!showDemoSelector)}
-                        className="text-[11px] font-bold text-brand-400 hover:text-brand-300 py-0.5 px-2 rounded bg-slate-800/80"
+                        onClick={() => setInputCode('')}
+                        className="absolute right-20 top-2.5 text-slate-400 hover:text-white p-1 text-xs"
                       >
-                        {showDemoSelector ? 'Ocultar lista ▲' : 'Ver todos (15) ▼'}
+                        ✕
                       </button>
+                    )}
+
+                    <button
+                      type="submit"
+                      className="absolute right-1.5 top-1.5 bottom-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs uppercase px-3 rounded-md transition-colors"
+                    >
+                      Validar
+                    </button>
+                  </form>
+
+                  {/* BANCO DE MENORES DE PRUEBA RÁPIDA (PULSAR SIN ABRIR TECLADO) */}
+                  <div className="mt-3 pt-2.5 border-t border-slate-800/80">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[11px] font-semibold text-slate-400">
+                        Prueba rápida táctil:
+                      </span>
+                      <span className="text-[10px] text-slate-500">Toca para registrar</span>
                     </div>
 
-                    {/* Quick tap chips (Always show 3 high-impact samples: 1 Celiac, 1 Normal, 1 Halal) */}
-                    <div className="grid grid-cols-3 gap-1.5 mt-2">
+                    <div className="grid grid-cols-3 gap-1.5">
                       <button
                         type="button"
                         onClick={() => processScan('ID-001')}
-                        className="p-2 rounded-xl bg-slate-950/90 border border-amber-500/40 hover:border-amber-400 text-left transition-all active:scale-95 group"
+                        className="p-2 rounded-lg bg-slate-950 border border-amber-500/40 hover:border-amber-400 text-left transition-all active:scale-95"
                       >
-                        <div className="text-[10px] font-mono font-bold text-amber-400 truncate">ID-001 (🌾 Celíaco)</div>
-                        <div className="text-xs font-bold text-slate-200 truncate">Juan Pérez</div>
-                        <div className="text-[9px] text-slate-400 mt-0.5">🌾 Sin gluten</div>
+                        <div className="text-[10px] font-mono font-bold text-amber-400">ID-001 (Celíaco)</div>
+                        <div className="text-xs font-semibold text-slate-200 truncate">Juan Pérez</div>
+                        <div className="text-[9px] text-amber-300 font-mono mt-0.5">Sin gluten</div>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => processScan('ID-002')}
-                        className="p-2 rounded-xl bg-slate-950/90 border border-slate-700/80 hover:border-slate-500 text-left transition-all active:scale-95"
+                        className="p-2 rounded-lg bg-slate-950 border border-slate-700/80 hover:border-slate-500 text-left transition-all active:scale-95"
                       >
-                        <div className="text-[10px] font-mono font-bold text-slate-400 truncate">ID-002 (Sin Alergia)</div>
-                        <div className="text-xs font-bold text-slate-200 truncate">Sofía Gómez</div>
-                        <div className="text-[9px] text-emerald-400 mt-0.5">✓ Menú estándar</div>
+                        <div className="text-[10px] font-mono font-bold text-slate-400">ID-002 (Ordinario)</div>
+                        <div className="text-xs font-semibold text-slate-200 truncate">Sofía Gómez</div>
+                        <div className="text-[9px] text-slate-400 font-mono mt-0.5">Estándar</div>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => processScan('ID-004')}
-                        className="p-2 rounded-xl bg-slate-950/90 border border-rose-500/40 hover:border-rose-400 text-left transition-all active:scale-95"
+                        className="p-2 rounded-lg bg-slate-950 border border-rose-500/40 hover:border-rose-400 text-left transition-all active:scale-95"
                       >
-                        <div className="text-[10px] font-mono font-bold text-rose-400 truncate">ID-004 (🥜 Crítico)</div>
-                        <div className="text-xs font-bold text-slate-200 truncate">Lucas Silva</div>
-                        <div className="text-[9px] text-rose-400 mt-0.5">⚠️ EpiPen</div>
+                        <div className="text-[10px] font-mono font-bold text-rose-400">ID-004 (Crítico)</div>
+                        <div className="text-xs font-semibold text-slate-200 truncate">Lucas Silva</div>
+                        <div className="text-[9px] text-rose-300 font-mono mt-0.5">Frutos secos</div>
                       </button>
                     </div>
-
-                    {/* Extended list when expanded */}
-                    {showDemoSelector && (
-                      <div className="mt-2.5 max-h-48 overflow-y-auto space-y-1 pr-1 bg-slate-950/60 p-2 rounded-xl border border-slate-800">
-                        {minors.map((kid) => {
-                          const isAlready = !!activeRecords[kid.id];
-                          return (
-                            <button
-                              key={kid.id}
-                              type="button"
-                              onClick={() => {
-                                processScan(kid.id);
-                              }}
-                              className={`w-full flex items-center justify-between p-2 rounded-lg text-left text-xs transition-colors ${
-                                isAlready
-                                  ? 'bg-slate-900/40 text-slate-500 hover:bg-slate-800'
-                                  : 'bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-800/80'
-                              }`}
-                            >
-                              <div className="flex items-center space-x-2 truncate">
-                                <span>{kid.avatar}</span>
-                                <div className="truncate">
-                                  <span className="font-mono font-bold text-brand-300 text-[11px] mr-1.5">{kid.id}</span>
-                                  <span className="font-semibold">{kid.name}</span>
-                                </div>
-                              </div>
-
-                              <div className="flex items-center space-x-1.5 flex-shrink-0">
-                                {kid.medical && (
-                                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
-                                    {kid.medical.title.split(' ')[0]}
-                                  </span>
-                                )}
-                                {isAlready ? (
-                                  <span className="text-[10px] text-emerald-400 font-bold">✓ Fichado</span>
-                                ) : (
-                                  <span className="text-[10px] text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded">Tocar ➔</span>
-                                )}
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
                   </div>
                 </div>
 
-                {/* DYNAMIC FEEDBACK SCREEN / CARD */}
+                {/* TARJETA DINÁMICA DE FEEDBACK (ÉXITO / DUPLICADO / ALERTA) */}
                 {feedback ? (
-                  <div className={`rounded-2xl border-2 p-4 shadow-2xl transition-all duration-300 transform scale-100 ${
+                  <div className={`rounded-xl border p-4 shadow-lg transition-all ${
                     feedback.status === 'success' 
-                      ? 'bg-gradient-to-b from-emerald-950/90 to-slate-900 border-emerald-500 shadow-emerald-950/50' 
+                      ? 'bg-slate-900 border-emerald-500/80' 
                       : feedback.status === 'duplicate'
-                      ? 'bg-gradient-to-b from-rose-950/95 to-slate-900 border-rose-500 shadow-rose-950/50 animate-bounce-short'
-                      : 'bg-gradient-to-b from-amber-950/90 to-slate-900 border-amber-500 shadow-amber-950/50'
+                      ? 'bg-slate-900 border-rose-500/80 ring-1 ring-rose-500/40'
+                      : 'bg-slate-900 border-amber-500/80'
                   }`}>
                     
-                    {/* FEEDBACK STATUS BANNER */}
+                    {/* Encabezado del feedback */}
                     <div className="flex items-start justify-between">
                       <div className="flex items-center space-x-2.5">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xl font-bold shadow-lg ${
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm ${
                           feedback.status === 'success'
-                            ? 'bg-emerald-500 text-slate-950 ring-4 ring-emerald-500/30'
+                            ? 'bg-emerald-500 text-slate-950'
                             : feedback.status === 'duplicate'
-                            ? 'bg-rose-500 text-white ring-4 ring-rose-500/30 animate-pulse'
-                            : 'bg-amber-500 text-slate-950 ring-4 ring-amber-500/30'
+                            ? 'bg-rose-500 text-white'
+                            : 'bg-amber-500 text-slate-950'
                         }`}>
-                          {feedback.status === 'success' ? '✓' : '⚠️'}
+                          {feedback.status === 'success' ? '✓' : '!'}
                         </div>
                         <div>
-                          <span className={`text-[11px] font-extrabold uppercase tracking-widest ${
+                          <span className={`text-[10px] font-bold uppercase tracking-wider ${
                             feedback.status === 'success' ? 'text-emerald-400' : 'text-rose-400'
                           }`}>
-                            {feedback.status === 'success' ? 'Registro Correcto' : 'Aviso de Acceso'}
+                            {feedback.status === 'success' ? 'Validación Correcta' : 'Aviso de Acceso'}
                           </span>
-                          <h3 className="text-base font-black text-white leading-tight">
+                          <h3 className="text-sm font-bold text-white leading-tight">
                             {feedback.message}
                           </h3>
                         </div>
                       </div>
 
-                      {/* Close button */}
                       <button
+                        type="button"
                         onClick={() => setFeedback(null)}
-                        className="text-slate-400 hover:text-white p-1 rounded-lg bg-white/5"
+                        className="text-slate-400 hover:text-white p-1 rounded bg-slate-800 text-xs"
                       >
                         ✕
                       </button>
                     </div>
 
-                    {/* DUPLICATE WARNING BOX */}
+                    {/* ALERTA DE DUPLICADO */}
                     {feedback.status === 'duplicate' && feedback.previousTime && (
-                      <div className="mt-3 p-3 bg-rose-500/20 border border-rose-500/50 rounded-xl text-center">
-                        <p className="text-xs text-rose-200 font-medium">
-                          Este menor ya realizó su fichaje para <span className="font-bold underline uppercase">{currentMode}</span> a las:
+                      <div className="mt-3 p-3 bg-rose-500/10 border border-rose-500/40 rounded-lg text-center">
+                        <p className="text-xs text-rose-200">
+                          Este menor ya fue registrado en el turno de <strong className="uppercase">{currentMode}</strong>:
                         </p>
-                        <p className="text-2xl font-black font-mono text-rose-300 mt-1">
-                          ⏰ {feedback.previousTime}
+                        <p className="text-xl font-black font-mono text-rose-400 mt-0.5">
+                          {feedback.previousTime}
                         </p>
-                        <p className="text-[10px] text-rose-300/80 mt-1">
-                          Intento duplicado bloqueado automáticamente a las {feedback.timestamp}
+                        <p className="text-[10px] text-rose-300/70 mt-0.5">
+                          Nuevo intento bloqueado a las {feedback.timestamp}
                         </p>
                       </div>
                     )}
 
-                    {/* MINOR DETAILS CARD (FOR SUCCESS & DUPLICATE) */}
+                    {/* FICHA TÉCNICA DEL MENOR */}
                     {feedback.minor && (
-                      <div className="mt-3 bg-slate-950/70 rounded-xl p-3.5 border border-slate-800">
-                        <div className="flex items-center space-x-3 mb-2.5">
-                          <div className="text-3xl bg-slate-800 p-2 rounded-xl">
-                            {feedback.minor.avatar}
+                      <div className="mt-3 bg-slate-950 rounded-lg p-3 border border-slate-800">
+                        <div className="flex items-center space-x-2.5 mb-2">
+                          <div className="w-10 h-10 rounded-lg bg-slate-800 text-slate-200 flex items-center justify-center font-mono font-bold text-xs border border-slate-700">
+                            {feedback.minor.initials}
                           </div>
                           <div>
-                            <div className="flex items-center space-x-2">
-                              <span className="font-mono text-xs font-bold text-brand-400 bg-brand-500/10 px-1.5 py-0.5 rounded border border-brand-500/20">
+                            <div className="flex items-center space-x-1.5">
+                              <span className="font-mono text-[10px] font-bold text-blue-400 bg-blue-500/10 px-1 py-0.2 rounded border border-blue-500/20">
                                 {feedback.minor.id}
                               </span>
-                              <span className="text-[11px] font-mono text-slate-400">
+                              <span className="text-[10px] font-mono text-slate-400">
                                 {feedback.minor.wristband}
                               </span>
                             </div>
-                            <h4 className="text-lg font-bold text-white leading-tight">
+                            <h4 className="text-sm font-bold text-white mt-0.5">
                               {feedback.minor.name}
                             </h4>
-                            <p className="text-xs text-slate-400">
+                            <p className="text-[11px] text-slate-400">
                               {feedback.minor.age} años · {feedback.minor.zone}
                             </p>
                           </div>
                         </div>
 
-                        {/* HIGH CONTRAST MEDICAL / ALLERGY WARNING CARD */}
+                        {/* TARJETA DE ALERTA MÉDICA / DIETA (ALTO CONTRASTE) */}
                         {feedback.minor.medical && (
-                          <div className={`mt-2 p-3 rounded-xl border-2 flex items-start space-x-2.5 ${
-                            feedback.minor.medical.severity === 'high'
-                              ? 'bg-amber-500/25 border-amber-500 text-amber-200'
-                              : 'bg-amber-500/15 border-amber-500/60 text-amber-200'
-                          }`}>
-                            <span className="text-2xl">⚠️</span>
-                            <div>
-                              <div className="flex items-center space-x-2">
-                                <span className="text-[10px] font-black uppercase tracking-wider bg-amber-500 text-slate-950 px-1.5 py-0.2 rounded font-mono">
-                                  {feedback.minor.medical.type}
-                                </span>
-                              </div>
-                              <h5 className="font-black text-sm text-amber-300 mt-0.5 leading-snug">
-                                {feedback.minor.medical.title}
-                              </h5>
-                              <p className="text-xs font-medium text-amber-100 mt-0.5">
-                                {feedback.minor.medical.description}
-                              </p>
+                          <div className="mt-2 p-2.5 rounded-lg border border-amber-500/50 bg-amber-500/10 text-amber-200">
+                            <div className="flex items-center space-x-1.5 mb-0.5">
+                              <span className="text-[9px] font-bold uppercase tracking-wider bg-amber-500 text-slate-950 px-1 py-0.2 rounded font-mono">
+                                {feedback.minor.medical.type}
+                              </span>
                             </div>
+                            <h5 className="font-bold text-xs text-amber-300">
+                              {feedback.minor.medical.title}
+                            </h5>
+                            <p className="text-[11px] text-amber-200/90 mt-0.5">
+                              {feedback.minor.medical.description}
+                            </p>
                           </div>
                         )}
 
-                        {/* INFO DETAILS ROW */}
-                        <div className="mt-3 pt-2.5 border-t border-slate-800 grid grid-cols-2 gap-2 text-[11px]">
+                        {/* DATOS ADICIONALES */}
+                        <div className="mt-2.5 pt-2 border-t border-slate-800/80 grid grid-cols-2 gap-2 text-[11px]">
                           <div>
-                            <span className="text-slate-400">Monitor Responsable:</span>
-                            <p className="font-semibold text-slate-200">{feedback.minor.monitor}</p>
+                            <span className="text-slate-500 block">Monitor Asignado:</span>
+                            <span className="font-medium text-slate-300">{feedback.minor.monitor}</span>
                           </div>
                           <div>
-                            <span className="text-slate-400">Hora de Fichaje:</span>
-                            <p className="font-mono font-bold text-emerald-400">{feedback.timestamp}</p>
+                            <span className="text-slate-500 block">Hora de Registro:</span>
+                            <span className="font-mono font-bold text-emerald-400">{feedback.timestamp}</span>
                           </div>
                           {currentMode === 'moviles' && (
-                            <div className="col-span-2 bg-indigo-950/40 p-2 rounded-lg border border-indigo-800/40">
-                              <span className="text-indigo-300 font-semibold">Dispositivo Asignado:</span>
-                              <p className="text-xs text-white font-mono">{feedback.minor.phoneModel}</p>
+                            <div className="col-span-2 bg-slate-900 p-2 rounded border border-slate-800 mt-1">
+                              <span className="text-[10px] text-slate-400 block font-semibold">Dispositivo Vinculado:</span>
+                              <span className="text-xs text-white font-mono">{feedback.minor.phoneModel}</span>
                             </div>
                           )}
                         </div>
                       </div>
                     )}
 
-                    {/* NOT FOUND HELPER */}
-                    {feedback.status === 'not_found' && (
-                      <div className="mt-2 text-center p-3 bg-amber-950/30 border border-amber-500/30 rounded-xl">
-                        <p className="text-xs text-amber-200">
-                          Comprueba que el código de la pulsera esté dado de alta en la base de datos o prueba a buscarlo por nombre en el panel de resumen.
-                        </p>
-                      </div>
-                    )}
-
-                    {/* QUICK ACTION TO NEXT SCAN */}
                     <button
-                      onClick={() => {
-                        setFeedback(null);
-                        if (inputRef.current) inputRef.current.focus();
-                      }}
-                      className="w-full mt-3 py-2.5 bg-slate-800 hover:bg-slate-700 active:scale-98 rounded-xl font-bold text-xs uppercase tracking-wider text-slate-200 border border-slate-700 transition-all flex items-center justify-center gap-1.5"
+                      type="button"
+                      onClick={() => setFeedback(null)}
+                      className="w-full mt-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-semibold text-slate-200 border border-slate-700 transition-colors"
                     >
-                      <span>Listo para siguiente escaneo</span>
-                      <span>➔</span>
+                      Aceptar y continuar escaneo
                     </button>
                   </div>
                 ) : (
-                  /* IDLE / WAITING STATE CARD */
-                  <div className="flex-1 flex flex-col items-center justify-center p-6 text-center bg-slate-900/40 rounded-2xl border border-dashed border-slate-800">
-                    <div className="w-16 h-16 rounded-2xl bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-3xl mb-3 shadow-inner">
-                      {MODES.find(m => m.id === currentMode)?.icon || '📡'}
+                  /* ESTADO DE ESPERA LIMPIO */
+                  <div className="flex-1 flex flex-col items-center justify-center p-6 text-center bg-slate-900/40 rounded-xl border border-dashed border-slate-800">
+                    <div className="w-10 h-10 rounded-lg bg-slate-800/60 border border-slate-700 flex items-center justify-center text-slate-300 font-mono text-sm mb-2.5">
+                      RF
                     </div>
-                    <h3 className="text-base font-bold text-slate-200">
-                      Esperando Lectura de Pulsera
+                    <h3 className="text-sm font-semibold text-slate-200">
+                      Dispositivo listo para lectura
                     </h3>
                     <p className="text-xs text-slate-400 mt-1 max-w-xs">
-                      Apunta la pistola lectora a la pulsera del menor o pulsa en uno de los menores de prueba de arriba.
+                      Acerca el lector a la pulsera del residente o usa los accesos de prueba táctil de arriba.
                     </p>
-
-                    <div className="mt-4 flex items-center gap-2 text-[11px] text-slate-400 bg-slate-950 px-3 py-1.5 rounded-full border border-slate-800">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                      <span>Modo activo: <strong className="text-white uppercase">{currentMode}</strong></span>
-                    </div>
                   </div>
                 )}
               </div>
             )}
 
-            {/* VIEW: SUMMARY & ATTENDANCE DASHBOARD */}
+            {/* VISTA 2: PANEL DE RESUMEN CON FILTRADO EN LOS KPIS */}
             {currentView === 'summary' && (
               <div className="flex-1 flex flex-col space-y-3">
                 
-                {/* SEARCH AND FILTER BAR */}
-                <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-3 shadow-lg">
+                {/* 3 KPIS INTERACTIVOS: AL CLICAR FILTRAN DIRECTAMENTE */}
+                <div className="grid grid-cols-3 gap-2">
+                  {/* KPI: TOTAL */}
+                  <button
+                    type="button"
+                    onClick={() => setSummaryFilter('all')}
+                    className={`p-2.5 rounded-xl border text-center transition-all ${
+                      summaryFilter === 'all'
+                        ? 'bg-slate-800 border-blue-500 ring-2 ring-blue-500/30'
+                        : 'bg-slate-900 border-slate-800 hover:border-slate-700'
+                    }`}
+                  >
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Total</span>
+                    <p className="text-lg font-black text-white font-mono mt-0.5">{totalCount}</p>
+                    <span className="text-[9px] text-slate-500 block">Ver todos</span>
+                  </button>
+
+                  {/* KPI: PASADOS / FICHADOS */}
+                  <button
+                    type="button"
+                    onClick={() => setSummaryFilter('passed')}
+                    className={`p-2.5 rounded-xl border text-center transition-all ${
+                      summaryFilter === 'passed'
+                        ? 'bg-emerald-950/60 border-emerald-500 ring-2 ring-emerald-500/30'
+                        : 'bg-slate-900 border-slate-800 hover:border-emerald-500/40'
+                    }`}
+                  >
+                    <span className="text-[10px] uppercase font-bold text-emerald-400 block">Fichados</span>
+                    <p className="text-lg font-black text-emerald-400 font-mono mt-0.5">{registeredCount}</p>
+                    <span className="text-[9px] text-emerald-300/70 block">Solo pasados</span>
+                  </button>
+
+                  {/* KPI: PENDIENTES */}
+                  <button
+                    type="button"
+                    onClick={() => setSummaryFilter('pending')}
+                    className={`p-2.5 rounded-xl border text-center transition-all ${
+                      summaryFilter === 'pending'
+                        ? 'bg-rose-950/60 border-rose-500 ring-2 ring-rose-500/30'
+                        : 'bg-slate-900 border-slate-800 hover:border-rose-500/40'
+                    }`}
+                  >
+                    <span className="text-[10px] uppercase font-bold text-rose-400 block">Pendientes</span>
+                    <p className="text-lg font-black text-rose-400 font-mono mt-0.5">{pendingCount}</p>
+                    <span className="text-[9px] text-rose-300/70 block">Faltan</span>
+                  </button>
+                </div>
+
+                {/* FILTROS ADICIONALES Y BUSCADOR */}
+                <div className="bg-slate-900 border border-slate-800 rounded-xl p-2.5 space-y-2">
                   <div className="relative">
                     <input
                       type="text"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      placeholder="Buscar por nombre, ID o habitación..."
-                      className="w-full bg-slate-950 border border-slate-700 text-sm rounded-xl px-3.5 py-2.5 text-white placeholder:text-slate-500 focus:outline-none focus:border-brand-500"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Buscar por nombre, habitación o alergia..."
+                      className="w-full bg-slate-950 border border-slate-700 text-xs rounded-lg px-3 py-2 text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500"
                     />
-                    {searchTerm && (
+                    {searchQuery && (
                       <button
-                        onClick={() => setSearchTerm('')}
-                        className="absolute right-3 top-2.5 text-slate-400 hover:text-white text-xs"
+                        type="button"
+                        onClick={() => setSearchQuery('')}
+                        className="absolute right-2.5 top-2 text-slate-400 hover:text-white text-xs"
                       >
                         ✕
                       </button>
                     )}
                   </div>
 
-                  {/* SUMMARY QUICK STATS PILLS */}
-                  <div className="grid grid-cols-3 gap-2 mt-2.5">
-                    <div className="bg-slate-950 p-2 rounded-xl border border-slate-800 text-center">
-                      <span className="text-[10px] text-slate-400 uppercase font-semibold">Total</span>
-                      <p className="text-base font-black text-white">{totalCount}</p>
-                    </div>
-                    <div className="bg-emerald-950/40 p-2 rounded-xl border border-emerald-500/30 text-center">
-                      <span className="text-[10px] text-emerald-400 uppercase font-semibold">Pasados</span>
-                      <p className="text-base font-black text-emerald-400">{registeredCount}</p>
-                    </div>
-                    <div className="bg-rose-950/30 p-2 rounded-xl border border-rose-500/30 text-center">
-                      <span className="text-[10px] text-rose-300 uppercase font-semibold">Pendientes</span>
-                      <p className="text-base font-black text-rose-300">{totalCount - registeredCount}</p>
+                  <div className="flex items-center justify-between text-xs pt-1">
+                    <span className="text-[11px] text-slate-400 font-medium">Filtro activo:</span>
+                    <div className="flex gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setSummaryFilter('allergies')}
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded border transition-colors ${
+                          summaryFilter === 'allergies'
+                            ? 'bg-amber-500 text-slate-950 border-amber-400'
+                            : 'bg-slate-800 text-amber-300 border-amber-500/30'
+                        }`}
+                      >
+                        Dietas / Alergias
+                      </button>
                     </div>
                   </div>
                 </div>
 
-                {/* LIST OF MINORS */}
-                <div className="flex-1 overflow-y-auto space-y-2 pr-0.5">
-                  {minors
-                    .filter(m => {
-                      if (!searchTerm) return true;
-                      const q = searchTerm.toLowerCase();
+                {/* LISTADO DE RESIDENTES FILTRADO */}
+                <div className="flex-1 overflow-y-auto space-y-1.5 pr-0.5 max-h-[50vh]">
+                  {MINORS_DATA
+                    .filter((m) => {
+                      const isReg = !!activeRecords[m.id];
+                      if (summaryFilter === 'passed' && !isReg) return false;
+                      if (summaryFilter === 'pending' && isReg) return false;
+                      if (summaryFilter === 'allergies' && !m.medical) return false;
+
+                      if (!searchQuery) return true;
+                      const q = searchQuery.toLowerCase();
                       return (
                         m.name.toLowerCase().includes(q) ||
                         m.id.toLowerCase().includes(q) ||
@@ -1037,62 +958,61 @@
                         (m.medical && m.medical.title.toLowerCase().includes(q))
                       );
                     })
-                    .map(kid => {
+                    .map((kid) => {
                       const record = activeRecords[kid.id];
-                      const isRegistered = !!record;
+                      const isReg = !!record;
 
                       return (
                         <div
                           key={kid.id}
-                          className={`p-3 rounded-xl border transition-all ${
-                            isRegistered
-                              ? 'bg-slate-900/60 border-emerald-500/40 shadow-sm'
-                              : 'bg-slate-900/30 border-slate-800'
+                          className={`p-2.5 rounded-lg border transition-all ${
+                            isReg
+                              ? 'bg-slate-900/80 border-emerald-500/40'
+                              : 'bg-slate-900/40 border-slate-800'
                           }`}
                         >
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-2.5">
-                              <span className="text-2xl">{kid.avatar}</span>
-                              <div>
-                                <div className="flex items-center space-x-2">
-                                  <span className="font-mono text-[10px] font-bold text-slate-400 bg-slate-800 px-1.5 py-0.2 rounded">
+                            <div className="flex items-center space-x-2.5 truncate mr-2">
+                              <div className="w-8 h-8 rounded bg-slate-800 text-slate-200 flex-shrink-0 flex items-center justify-center font-mono font-bold text-[11px] border border-slate-700">
+                                {kid.initials}
+                              </div>
+                              <div className="truncate">
+                                <div className="flex items-center space-x-1.5">
+                                  <span className="font-mono text-[9px] font-bold text-slate-400 bg-slate-800 px-1 py-0.2 rounded">
                                     {kid.id}
                                   </span>
-                                  <h4 className="font-bold text-sm text-white">
+                                  <h4 className="font-bold text-xs text-white truncate">
                                     {kid.name}
                                   </h4>
                                 </div>
-                                <p className="text-[11px] text-slate-400">
+                                <p className="text-[10px] text-slate-400 truncate mt-0.5">
                                   {kid.zone} · Mon: {kid.monitor}
                                 </p>
                               </div>
                             </div>
 
-                            {/* Status badge & toggle button */}
                             <button
-                              onClick={() => toggleManualMinor(kid.id)}
-                              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-95 flex items-center space-x-1.5 ${
-                                isRegistered
-                                  ? 'bg-emerald-500 text-slate-950 hover:bg-emerald-400'
+                              type="button"
+                              onClick={() => handleToggleManual(kid.id)}
+                              className={`px-2.5 py-1 rounded text-xs font-bold transition-all flex-shrink-0 ${
+                                isReg
+                                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30'
                                   : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
                               }`}
                             >
-                              <span>{isRegistered ? '✓ Fichado' : '+ Fichar'}</span>
+                              {isReg ? '✓ Fichado' : '+ Fichar'}
                             </button>
                           </div>
 
-                          {/* Allergy badge if any */}
                           {kid.medical && (
-                            <div className="mt-2 pt-1.5 border-t border-slate-800/80 flex items-center space-x-1.5">
-                              <span className="text-xs">⚠️</span>
-                              <span className="text-[10px] font-bold text-amber-300 bg-amber-500/20 px-2 py-0.5 rounded border border-amber-500/30">
-                                {kid.medical.title}
-                              </span>
+                            <div className="mt-1.5 pt-1 border-t border-slate-800/80 flex items-center space-x-1 text-[10px] font-semibold text-amber-300">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0"></span>
+                              <span className="truncate">{kid.medical.title}</span>
                             </div>
                           )}
 
-                          {isRegistered && record.timestamp && (
-                            <div className="mt-1 text-[10px] font-mono text-emerald-400/90 text-right">
+                          {isReg && record.timestamp && (
+                            <div className="mt-1 text-[9px] font-mono text-emerald-400/80 text-right">
                               Registrado a las {record.timestamp}
                             </div>
                           )}
@@ -1101,55 +1021,57 @@
                     })}
                 </div>
 
-                {/* BOTTOM UTILITY ACTIONS */}
+                {/* ACCIONES DE CIERRE Y REINICIO */}
                 <div className="pt-2 flex items-center gap-2">
                   <button
-                    onClick={resetCurrentSession}
-                    className="flex-1 py-2 px-3 rounded-xl bg-rose-950/40 hover:bg-rose-900/50 text-rose-300 text-xs font-semibold border border-rose-800/50 transition-colors"
+                    type="button"
+                    onClick={handleResetSession}
+                    className="flex-1 py-2 px-3 rounded-lg bg-rose-950/30 hover:bg-rose-900/40 text-rose-300 text-xs font-semibold border border-rose-800/40 transition-colors"
                   >
-                    🗑️ Reiniciar Sesión {MODES.find(m => m.id === currentMode)?.label}
+                    Reiniciar {MODES.find(m => m.id === currentMode)?.label}
                   </button>
 
                   <button
+                    type="button"
                     onClick={() => {
-                      alert(`Exportado reporte de ${MODES.find(m => m.id === currentMode)?.label}: ${registeredCount} de ${totalCount} menores presentes.`);
+                      alert(`Informe del turno ${MODES.find(m => m.id === currentMode)?.label}:\nRegistrados: ${registeredCount}\nPendientes: ${pendingCount}\nTotal: ${totalCount}`);
                     }}
-                    className="py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700"
+                    className="py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700"
                   >
-                    📤 Exportar
+                    Exportar
                   </button>
                 </div>
               </div>
             )}
           </main>
 
-          {/* BOTTOM NAVIGATION BAR (FIXED FOR THUMB ERGONOMICS) */}
+          {/* BARRA INFERIOR DE NAVEGACIÓN */}
           <nav className="fixed bottom-0 left-0 right-0 bg-slate-950/95 backdrop-blur-lg border-t border-slate-800 px-6 py-2 z-50 max-w-md mx-auto">
             <div className="grid grid-cols-2 gap-3">
               <button
+                type="button"
                 onClick={() => setCurrentView('scan')}
-                className={`flex flex-col items-center justify-center py-2 px-3 rounded-xl transition-all ${
+                className={`py-2 px-3 rounded-lg text-xs font-bold transition-all text-center ${
                   currentView === 'scan'
-                    ? 'bg-brand-600/20 text-brand-400 border border-brand-500/40 shadow-md font-bold'
-                    : 'text-slate-400 hover:text-slate-200'
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200 bg-slate-900/60 border border-slate-800'
                 }`}
               >
-                <span className="text-xl">⚡</span>
-                <span className="text-xs mt-0.5">Escáner / Entrada</span>
+                Lector / Entrada
               </button>
 
               <button
+                type="button"
                 onClick={() => setCurrentView('summary')}
-                className={`flex flex-col items-center justify-center py-2 px-3 rounded-xl transition-all relative ${
+                className={`py-2 px-3 rounded-lg text-xs font-bold transition-all text-center relative ${
                   currentView === 'summary'
-                    ? 'bg-brand-600/20 text-brand-400 border border-brand-500/40 shadow-md font-bold'
-                    : 'text-slate-400 hover:text-slate-200'
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200 bg-slate-900/60 border border-slate-800'
                 }`}
               >
-                <span className="text-xl">📋</span>
-                <span className="text-xs mt-0.5">Resumen ({registeredCount})</span>
+                <span>Resumen ({registeredCount})</span>
                 {registeredCount > 0 && (
-                  <span className="absolute top-1.5 right-6 w-2 h-2 rounded-full bg-emerald-400"></span>
+                  <span className="absolute top-1.5 right-3 w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                 )}
               </button>
             </div>

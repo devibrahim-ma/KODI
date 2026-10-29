@@ -9,71 +9,66 @@ export function Header({
   currentTimeStr,
 }) {
   const percentage = Math.round((registeredCount / totalCount) * 100) || 0;
+  const currentModeObj = MODES.find((m) => m.id === currentMode);
 
   return (
-    <header className="bg-slate-900/95 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40 px-4 pt-3 pb-3 shadow-lg">
-      {/* Top row: Brand + Live Clock */}
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-emerald-500 flex items-center justify-center shadow-md shadow-blue-500/20">
-            <span className="text-white font-extrabold text-sm tracking-wider">KD</span>
+    <header className="bg-slate-900/95 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40 px-3.5 pt-3 pb-2.5 shadow-sm">
+      {/* Brand & live clock */}
+      <div className="flex items-center justify-between mb-2.5">
+        <div className="flex items-center space-x-2.5">
+          <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-black tracking-wider text-white text-xs border border-blue-400/30 shadow-sm">
+            KD
           </div>
           <div>
-            <h1 className="font-bold text-base leading-tight text-white flex items-center gap-1.5">
-              CampCheck <span className="text-[10px] font-semibold tracking-wider uppercase px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">KODI</span>
-            </h1>
-            <p className="text-[11px] text-slate-400">Kontrol Dinámico Infantil</p>
+            <div className="flex items-center space-x-1.5">
+              <span className="font-extrabold text-sm tracking-tight text-white">KODI</span>
+              <span className="text-[10px] font-mono uppercase px-1 py-0.2 rounded bg-slate-800 text-slate-300 border border-slate-700">v1.2</span>
+            </div>
+            <p className="text-[10px] text-slate-400 font-medium">Control Residencial de Accesos</p>
           </div>
         </div>
 
         <div className="text-right">
-          <div className="text-xs font-mono font-bold text-slate-300 bg-slate-800/80 px-2 py-0.5 rounded-md border border-slate-700/60 inline-flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          <div className="font-mono text-xs font-semibold text-slate-300 bg-slate-950 px-2 py-1 rounded border border-slate-800 inline-flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
             {currentTimeStr || '12:00:00'}
           </div>
         </div>
       </div>
 
-      {/* MODES SWITCHER TABS */}
-      <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-950/70 rounded-xl border border-slate-800">
+      {/* 6 Modes horizontal switcher */}
+      <div className="flex items-center space-x-1 overflow-x-auto no-scrollbar py-1">
         {MODES.map((m) => {
           const isActive = currentMode === m.id;
           return (
             <button
               key={m.id}
+              type="button"
               onClick={() => onModeChange(m.id)}
-              className={`flex items-center justify-center gap-1.5 py-2 px-1 rounded-lg text-xs font-bold transition-all duration-200 active:scale-95 ${
+              className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 isActive
-                  ? 'bg-gradient-to-r from-slate-800 to-slate-800/90 text-white shadow-md border border-slate-700/80 ring-1 ring-white/10'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/50'
+                  ? 'bg-blue-600 text-white shadow-sm font-bold'
+                  : 'bg-slate-950 text-slate-400 hover:text-slate-200 border border-slate-800/80'
               }`}
             >
-              <span className="text-sm">{m.icon}</span>
-              <span>{m.label}</span>
+              {m.label}
             </button>
           );
         })}
       </div>
 
-      {/* REALTIME METRICS COUNTER BAR */}
-      <div className="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center justify-between">
-        <div className="flex items-baseline gap-2">
-          <span className="text-xs font-semibold text-slate-400">Registrados:</span>
-          <span className="text-lg font-black text-emerald-400 tracking-tight">
-            {registeredCount}
-            <span className="text-xs text-slate-400 font-normal ml-1">/ {totalCount}</span>
-          </span>
+      {/* KPI info row */}
+      <div className="mt-2 pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs">
+        <div className="flex items-center space-x-2">
+          <span className="text-slate-400 font-medium">Turno:</span>
+          <span className="font-bold text-slate-200 uppercase">{currentModeObj?.label}</span>
+          <span className="text-[11px] text-slate-500 font-mono">({currentModeObj?.schedule})</span>
         </div>
-
-        {/* Progress bar pill */}
-        <div className="flex items-center gap-2">
-          <div className="w-24 bg-slate-800 rounded-full h-2.5 overflow-hidden border border-slate-700/60">
-            <div
-              className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-500 rounded-full"
-              style={{ width: `${percentage}%` }}
-            ></div>
-          </div>
-          <span className="text-[11px] font-bold text-slate-300 font-mono">{percentage}%</span>
+        <div className="flex items-center space-x-1.5 font-mono text-[11px]">
+          <span className="text-emerald-400 font-bold">{registeredCount}</span>
+          <span className="text-slate-500">/</span>
+          <span className="text-slate-400">{totalCount}</span>
+          <span className="text-slate-500">({percentage}%)</span>
         </div>
       </div>
     </header>
