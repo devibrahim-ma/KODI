@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#090d16">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>KODI — Control y Gestión Residencial</title>
+  <title>KODIME — Control Residencial de Menores</title>
   
   <!-- Typography: Inter & Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -31,13 +31,6 @@
               850: '#131b2e',
               800: '#1b253d',
               700: '#2a3756',
-            },
-            kodi: {
-              50: '#eef6ff',
-              100: '#d9ebff',
-              500: '#2563eb',
-              600: '#1d4ed8',
-              700: '#1e40af',
             }
           }
         }
@@ -60,10 +53,9 @@
       -webkit-tap-highlight-color: transparent;
       user-select: none;
     }
-    input, textarea {
+    input, textarea, select {
       user-select: text;
     }
-    /* Hide horizontal scrollbar for clean app experience */
     .no-scrollbar::-webkit-scrollbar {
       display: none;
     }
@@ -87,13 +79,12 @@
         const ctx = new AudioContext();
 
         if (type === 'success') {
-          // Double harmonic chime (High confidence)
           const now = ctx.currentTime;
           const osc1 = ctx.createOscillator();
           const gain1 = ctx.createGain();
           osc1.type = 'sine';
-          osc1.frequency.setValueAtTime(659.25, now); // E5
-          osc1.frequency.exponentialRampToValueAtTime(880, now + 0.1); // A5
+          osc1.frequency.setValueAtTime(659.25, now);
+          osc1.frequency.exponentialRampToValueAtTime(880, now + 0.1);
           gain1.gain.setValueAtTime(0.2, now);
           gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
           osc1.connect(gain1);
@@ -105,7 +96,7 @@
           const gain2 = ctx.createGain();
           osc2.type = 'triangle';
           osc2.frequency.setValueAtTime(880, now + 0.1);
-          osc2.frequency.exponentialRampToValueAtTime(1318.5, now + 0.3); // E6
+          osc2.frequency.exponentialRampToValueAtTime(1318.5, now + 0.3);
           gain2.gain.setValueAtTime(0.18, now + 0.1);
           gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
           osc2.connect(gain2);
@@ -113,7 +104,6 @@
           osc2.start(now + 0.1);
           osc2.stop(now + 0.35);
         } else if (type === 'duplicate' || type === 'error') {
-          // Low reject pulse
           const now = ctx.currentTime;
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
@@ -148,7 +138,7 @@
       }
     };
 
-    // 6 TURNOS OFICIALES SEGÚN REQUERIMIENTO
+    // 6 TURNOS OFICIALES
     const MODES = [
       { id: 'desayuno', label: 'Desayuno', schedule: '08:00 - 09:30' },
       { id: 'mediodia', label: 'Medio Día', schedule: '11:30 - 12:30' },
@@ -158,8 +148,15 @@
       { id: 'moviles', label: 'Móviles', schedule: 'Control y Custodia' }
     ];
 
-    // DATASET DE 15 MENORES CON PROTOCOLOS MÉDICOS Y DIETAS
-    const MINORS_DATA = [
+    // ROLES DE PERSONAL
+    const STAFF_ROLES = [
+      { id: 'educador', label: 'Educador/a', badge: 'EDU', color: 'bg-blue-600', desc: 'Equipo Educativo' },
+      { id: 'ate', label: 'ATE', badge: 'ATE', color: 'bg-emerald-600', desc: 'Auxiliar Técnico Educativo' },
+      { id: 'mediador', label: 'Mediador/a', badge: 'MED', color: 'bg-purple-600', desc: 'Mediación Social e Intercultural' }
+    ];
+
+    // DATASET INICIAL DE MENORES
+    const INITIAL_MINORS = [
       {
         id: 'ID-001',
         wristband: 'PUL-8491',
@@ -169,6 +166,11 @@
         monitor: 'Carlos Ruiz',
         phoneModel: 'Xiaomi Redmi Note 11',
         initials: 'JP',
+        fatherName: 'Manuel Pérez',
+        motherName: 'Carmen Morales',
+        birthPlace: 'Málaga',
+        birthDate: '2014-03-12',
+        originCountry: 'España',
         medical: {
           hasAlert: true,
           type: 'Alergia Alimentaria',
@@ -186,6 +188,11 @@
         monitor: 'Laura Sánchez',
         phoneModel: 'iPhone 12',
         initials: 'SG',
+        fatherName: 'Alberto Gómez',
+        motherName: 'Patricia Ruiz',
+        birthPlace: 'Sevilla',
+        birthDate: '2012-07-25',
+        originCountry: 'España',
         medical: null
       },
       {
@@ -197,6 +204,11 @@
         monitor: 'Carlos Ruiz',
         phoneModel: 'Samsung Galaxy A33',
         initials: 'MA',
+        fatherName: 'Rachid Dahbi',
+        motherName: 'Fatima Zahra',
+        birthPlace: 'Tánger',
+        birthDate: '2013-05-18',
+        originCountry: 'Marruecos',
         medical: {
           hasAlert: true,
           type: 'Dieta Cultural',
@@ -214,6 +226,11 @@
         monitor: 'Carlos Ruiz',
         phoneModel: 'Motorola Moto G52',
         initials: 'LS',
+        fatherName: 'Tiago Silva',
+        motherName: 'Mariana Da Costa',
+        birthPlace: 'Lisboa',
+        birthDate: '2015-09-02',
+        originCountry: 'Portugal',
         medical: {
           hasAlert: true,
           type: 'Alerta Crítica',
@@ -231,6 +248,11 @@
         monitor: 'Ana Beltrán',
         phoneModel: 'Samsung S20 FE',
         initials: 'EV',
+        fatherName: 'Javier Vega',
+        motherName: 'Rosa Navarro',
+        birthPlace: 'Valencia',
+        birthDate: '2011-11-14',
+        originCountry: 'España',
         medical: null
       },
       {
@@ -242,6 +264,11 @@
         monitor: 'Carlos Ruiz',
         phoneModel: 'Realme C55',
         initials: 'MR',
+        fatherName: 'Antonio Romero',
+        motherName: 'Belén Castro',
+        birthPlace: 'Cádiz',
+        birthDate: '2016-01-20',
+        originCountry: 'España',
         medical: {
           hasAlert: true,
           type: 'Intolerancia Severa',
@@ -259,6 +286,11 @@
         monitor: 'Laura Sánchez',
         phoneModel: 'iPhone 11',
         initials: 'LS',
+        fatherName: 'David Santos',
+        motherName: 'Clara Blanco',
+        birthPlace: 'Toledo',
+        birthDate: '2013-08-30',
+        originCountry: 'España',
         medical: null
       },
       {
@@ -270,6 +302,11 @@
         monitor: 'Carlos Ruiz',
         phoneModel: 'Oppo A78',
         initials: 'DM',
+        fatherName: 'José Martínez',
+        motherName: 'Inmaculada Soler',
+        birthPlace: 'Murcia',
+        birthDate: '2014-04-10',
+        originCountry: 'España',
         medical: {
           hasAlert: true,
           type: 'Alergia Alimentaria',
@@ -287,6 +324,11 @@
         monitor: 'Ana Beltrán',
         phoneModel: 'Xiaomi 12 Lite',
         initials: 'AG',
+        fatherName: 'Pablo García',
+        motherName: 'Marta Ibáñez',
+        birthPlace: 'Zaragoza',
+        birthDate: '2012-10-05',
+        originCountry: 'España',
         medical: {
           hasAlert: true,
           type: 'Control Clínico',
@@ -304,6 +346,11 @@
         monitor: 'Laura Sánchez',
         phoneModel: 'Redmi 10C',
         initials: 'YB',
+        fatherName: 'Brahim Benali',
+        motherName: 'Amina El Fassi',
+        birthPlace: 'Nador',
+        birthDate: '2015-06-17',
+        originCountry: 'Marruecos',
         medical: {
           hasAlert: true,
           type: 'Dieta Cultural',
@@ -321,6 +368,11 @@
         monitor: 'Ana Beltrán',
         phoneModel: 'iPhone 13',
         initials: 'MF',
+        fatherName: 'Ignacio Fernández',
+        motherName: 'Cristina Díaz',
+        birthPlace: 'Santander',
+        birthDate: '2010-12-01',
+        originCountry: 'España',
         medical: {
           hasAlert: true,
           type: 'Régimen Dietético',
@@ -338,6 +390,11 @@
         monitor: 'Carlos Ruiz',
         phoneModel: 'Poco X5 Pro',
         initials: 'PC',
+        fatherName: 'Oriol Costa',
+        motherName: 'Montserrat Rovira',
+        birthPlace: 'Girona',
+        birthDate: '2014-02-14',
+        originCountry: 'España',
         medical: null
       },
       {
@@ -349,6 +406,11 @@
         monitor: 'Laura Sánchez',
         phoneModel: 'Samsung Galaxy A14',
         initials: 'CD',
+        fatherName: 'Andrés Delgado',
+        motherName: 'Pilar Ortiz',
+        birthPlace: 'Córdoba',
+        birthDate: '2013-09-09',
+        originCountry: 'España',
         medical: {
           hasAlert: true,
           type: 'Alergia Alimentaria',
@@ -366,6 +428,11 @@
         monitor: 'Carlos Ruiz',
         phoneModel: 'Xiaomi Redmi 12',
         initials: 'AM',
+        fatherName: 'Víctor Moreno',
+        motherName: 'Susana Gil',
+        birthPlace: 'Almería',
+        birthDate: '2011-04-29',
+        originCountry: 'España',
         medical: null
       },
       {
@@ -377,6 +444,11 @@
         monitor: 'Ana Beltrán',
         phoneModel: 'Motorola E22',
         initials: 'SK',
+        fatherName: 'Tariq Khattabi',
+        motherName: 'Nadia Mansour',
+        birthPlace: 'Tetuán',
+        birthDate: '2016-08-11',
+        originCountry: 'Marruecos',
         medical: {
           hasAlert: true,
           type: 'Dieta Combinada',
@@ -388,32 +460,57 @@
     ];
 
     function App() {
+      // ESTADO DE SESIÓN DE PERSONAL
+      const [currentUser, setCurrentUser] = useState(() => {
+        // Precargar para conveniencia de demo
+        return { role: 'educador', name: 'Laura Sánchez' };
+      });
+      const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+      // NAVEGACIÓN PRINCIPAL: 'auth' | 'menu' | 'recount' | 'add_minor'
+      const [navScreen, setNavScreen] = useState('auth');
+
+      // SUB-VISTA DENTRO DE RECUENTO: 'scan' | 'summary'
+      const [recountView, setRecountView] = useState('scan');
+
       const [currentMode, setCurrentMode] = useState('comida');
-      const [currentView, setCurrentView] = useState('scan'); // 'scan' | 'summary'
+      const [minors, setMinors] = useState(INITIAL_MINORS);
       const [inputCode, setInputCode] = useState('');
-      const [summaryFilter, setSummaryFilter] = useState('all'); // 'all' | 'passed' | 'pending' | 'allergies'
+      const [summaryFilter, setSummaryFilter] = useState('all');
       const [searchQuery, setSearchQuery] = useState('');
-      
-      // Control de registros por turno
+      const [currentTimeStr, setCurrentTimeStr] = useState('');
+      const [feedback, setFeedback] = useState(null);
+      const [screenFlash, setScreenFlash] = useState(null);
+
+      // FORMULARIO AÑADIR MENOR
+      const [newMinorForm, setNewMinorForm] = useState({
+        name: '',
+        fatherName: '',
+        motherName: '',
+        birthPlace: '',
+        birthDate: '',
+        originCountry: 'España',
+        zone: 'Pabellón A · Hab. 106',
+        medicalAlert: 'none',
+        medicalDetails: ''
+      });
+      const [formSuccessMessage, setFormSuccessMessage] = useState(null);
+
+      // Registros por turno con autor
       const [records, setRecords] = useState({
-        desayuno: { 'ID-001': { timestamp: '08:42:10' } },
+        desayuno: { 'ID-001': { timestamp: '08:42:10', registeredBy: 'Carlos Ruiz (Educador)' } },
         mediodia: {},
         comida: {
-          'ID-002': { timestamp: '13:45:10' },
-          'ID-007': { timestamp: '13:51:24' }
+          'ID-002': { timestamp: '13:45:10', registeredBy: 'Laura Sánchez (Educador)' },
+          'ID-007': { timestamp: '13:51:24', registeredBy: 'Laura Sánchez (Educador)' }
         },
         merienda: {},
         cena: {},
-        moviles: { 'ID-005': { timestamp: '10:15:00' } }
+        moviles: { 'ID-005': { timestamp: '10:15:00', registeredBy: 'Ana Beltrán (ATE)' } }
       });
-
-      const [feedback, setFeedback] = useState(null);
-      const [screenFlash, setScreenFlash] = useState(null); // 'green' | 'red'
-      const [currentTimeStr, setCurrentTimeStr] = useState('');
 
       const inputRef = useRef(null);
 
-      // Reloj institucional en vivo
       useEffect(() => {
         const updateClock = () => {
           const now = new Date();
@@ -426,18 +523,26 @@
 
       const activeRecords = records[currentMode] || {};
       const registeredCount = Object.keys(activeRecords).length;
-      const totalCount = MINORS_DATA.length;
+      const totalCount = minors.length;
       const pendingCount = totalCount - registeredCount;
       const percentage = Math.round((registeredCount / totalCount) * 100) || 0;
 
-      // Proceso de escaneo o pulsación de prueba
+      // Iniciar sesión
+      const handleLoginSubmit = (e) => {
+        e.preventDefault();
+        if (!currentUser.name.trim()) return;
+        setIsLoggedIn(true);
+        setNavScreen('menu');
+      };
+
+      // Fichar por escáner o botón de prueba
       const processScan = (rawCode) => {
         const code = (rawCode || '').trim().toUpperCase();
         if (!code) return;
 
         playAudioFeedback('beep');
 
-        const found = MINORS_DATA.find(m => 
+        const found = minors.find(m => 
           m.id.toUpperCase() === code ||
           m.wristband.toUpperCase() === code ||
           m.name.toUpperCase().includes(code)
@@ -445,6 +550,7 @@
 
         const now = new Date();
         const timestampStr = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const operatorInfo = `${currentUser.name} (${STAFF_ROLES.find(r => r.id === currentUser.role)?.label})`;
 
         if (!found) {
           playAudioFeedback('error');
@@ -464,7 +570,6 @@
         const previousRecord = activeRecords[found.id];
 
         if (previousRecord) {
-          // DUPLICADO DETECTADO
           playAudioFeedback('duplicate');
           triggerHaptic([250, 100, 250]);
           setScreenFlash('red');
@@ -473,11 +578,11 @@
             minor: found,
             timestamp: timestampStr,
             previousTime: previousRecord.timestamp,
+            registeredBy: previousRecord.registeredBy,
             message: 'REGISTRO PREVIO EXISTENTE'
           });
           setTimeout(() => setScreenFlash(null), 500);
         } else {
-          // REGISTRO EXITOSO
           playAudioFeedback('success');
           triggerHaptic([90]);
           setScreenFlash('green');
@@ -486,7 +591,7 @@
             ...prev,
             [currentMode]: {
               ...prev[currentMode],
-              [found.id]: { timestamp: timestampStr }
+              [found.id]: { timestamp: timestampStr, registeredBy: operatorInfo }
             }
           }));
 
@@ -494,26 +599,22 @@
             status: 'success',
             minor: found,
             timestamp: timestampStr,
+            registeredBy: operatorInfo,
             message: currentMode === 'moviles' ? 'Dispositivo verificado y registrado' : 'Acceso validado y registrado'
           });
           setTimeout(() => setScreenFlash(null), 500);
         }
 
         setInputCode('');
-        // IMPORTANTE: NO llamamos a inputRef.current.focus() aquí para NO levantar el teclado en móviles
-      };
-
-      const handleFormSubmit = (e) => {
-        e.preventDefault();
-        processScan(inputCode);
       };
 
       const handleToggleManual = (minorId) => {
-        const isRegistered = !!activeRecords[minorId];
+        const isReg = !!activeRecords[minorId];
         const now = new Date();
         const timestampStr = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const operatorInfo = `${currentUser.name} (${STAFF_ROLES.find(r => r.id === currentUser.role)?.label})`;
 
-        if (isRegistered) {
+        if (isReg) {
           setRecords(prev => {
             const copy = { ...prev[currentMode] };
             delete copy[minorId];
@@ -524,12 +625,11 @@
             ...prev,
             [currentMode]: {
               ...prev[currentMode],
-              [minorId]: { timestamp: timestampStr }
+              [minorId]: { timestamp: timestampStr, registeredBy: operatorInfo }
             }
           }));
           playAudioFeedback('success');
         }
-        // NO enfocar input aquí para que no salte teclado móvil
       };
 
       const handleResetSession = () => {
@@ -543,539 +643,1022 @@
         }
       };
 
+      // Guardar nuevo menor
+      const handleSaveNewMinor = (e) => {
+        e.preventDefault();
+        if (!newMinorForm.name.trim()) {
+          alert('Por favor, indica al menos el nombre y apellidos del menor.');
+          return;
+        }
+
+        // Generar ID correlativo y Pulsera nominal automática
+        const nextIndex = minors.length + 1;
+        const generatedId = `ID-${String(nextIndex).padStart(3, '0')}`;
+        const generatedWristband = `PUL-${Math.floor(1000 + Math.random() * 9000)}`;
+
+        const nameParts = newMinorForm.name.trim().split(' ');
+        const initials = (nameParts[0]?.[0] || 'X') + (nameParts[1]?.[0] || nameParts[0]?.[1] || 'M').toUpperCase();
+
+        let medicalData = null;
+        if (newMinorForm.medicalAlert !== 'none') {
+          medicalData = {
+            hasAlert: true,
+            type: newMinorForm.medicalAlert === 'celiac' ? 'Alergia Alimentaria' :
+                  newMinorForm.medicalAlert === 'nuts' ? 'Alerta Crítica' :
+                  newMinorForm.medicalAlert === 'halal' ? 'Dieta Cultural' : 'Condición Médica',
+            title: newMinorForm.medicalAlert === 'celiac' ? 'CELÍACO ESTRICTO' :
+                   newMinorForm.medicalAlert === 'nuts' ? 'ALERGIA SEVERA A FRUTOS SECOS' :
+                   newMinorForm.medicalAlert === 'halal' ? 'MENÚ HALAL CERTIFICADO' : 'NOTIFICACIÓN MÉDICA',
+            description: newMinorForm.medicalDetails || 'Protocolo específico asignado.',
+            severity: newMinorForm.medicalAlert === 'nuts' ? 'high' : 'medium'
+          };
+        }
+
+        const newChild = {
+          id: generatedId,
+          wristband: generatedWristband,
+          name: newMinorForm.name.trim(),
+          age: newMinorForm.birthDate ? Math.max(8, new Date().getFullYear() - new Date(newMinorForm.birthDate).getFullYear()) : 12,
+          zone: newMinorForm.zone || 'Pabellón A · Hab. 106',
+          monitor: currentUser.name,
+          phoneModel: 'Pendiente de asignación',
+          initials,
+          fatherName: newMinorForm.fatherName || 'No consta',
+          motherName: newMinorForm.motherName || 'No consta',
+          birthPlace: newMinorForm.birthPlace || 'No indicado',
+          birthDate: newMinorForm.birthDate || '2014-01-01',
+          originCountry: newMinorForm.originCountry || 'España',
+          medical: medicalData
+        };
+
+        setMinors(prev => [newChild, ...prev]);
+        playAudioFeedback('success');
+        setFormSuccessMessage({
+          name: newChild.name,
+          id: generatedId,
+          wristband: generatedWristband
+        });
+
+        // Limpiar formulario
+        setNewMinorForm({
+          name: '',
+          fatherName: '',
+          motherName: '',
+          birthPlace: '',
+          birthDate: '',
+          originCountry: 'España',
+          zone: 'Pabellón A · Hab. 106',
+          medicalAlert: 'none',
+          medicalDetails: ''
+        });
+      };
+
       return (
         <div className={`min-h-screen flex flex-col justify-between max-w-md mx-auto relative transition-colors duration-200 ${
           screenFlash === 'green' ? 'bg-emerald-950/20' : 
           screenFlash === 'red' ? 'bg-rose-950/20' : ''
         }`}>
-          
-          {/* HEADER PRINCIPAL */}
-          <header className="bg-slate-900/95 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40 px-3.5 pt-3 pb-2.5 shadow-sm">
-            {/* Fila 1: Logo corporativo y reloj */}
-            <div className="flex items-center justify-between mb-2.5">
-              <div className="flex items-center space-x-2.5">
-                <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-black tracking-wider text-white text-xs border border-blue-400/30 shadow-sm">
-                  KD
-                </div>
-                <div>
-                  <div className="flex items-center space-x-1.5">
-                    <span className="font-extrabold text-sm tracking-tight text-white">KODI</span>
-                    <span className="text-[10px] font-mono uppercase px-1 py-0.2 rounded bg-slate-800 text-slate-300 border border-slate-700">v1.2</span>
+
+          {/* ============================================================ */}
+          {/* PANTALLA 1: INICIO DE SESIÓN DE PERSONAL (EDUCADOR / ATE / MEDIADOR) */}
+          {/* ============================================================ */}
+          {navScreen === 'auth' && (
+            <div className="flex-1 flex flex-col justify-between p-5">
+              <div>
+                {/* Logo & Header */}
+                <div className="text-center pt-8 pb-6">
+                  <div className="w-14 h-14 rounded-2xl bg-blue-600 flex items-center justify-center font-black tracking-wider text-white text-xl mx-auto shadow-lg shadow-blue-600/30 border border-blue-400/40 mb-3">
+                    KD
                   </div>
-                  <p className="text-[10px] text-slate-400 font-medium">Control Residencial de Accesos</p>
+                  <h1 className="text-2xl font-black tracking-tight text-white">KODIME</h1>
+                  <p className="text-xs text-slate-400 mt-1">Control Residencial y Gestión de Menores</p>
                 </div>
-              </div>
 
-              <div className="text-right">
-                <div className="font-mono text-xs font-semibold text-slate-300 bg-slate-950 px-2 py-1 rounded border border-slate-800 inline-flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                  {currentTimeStr || '12:00:00'}
-                </div>
-              </div>
-            </div>
-
-            {/* Fila 2: Selector de los 6 turnos requeridos (scroll horizontal fluido sin barra) */}
-            <div className="flex items-center space-x-1 overflow-x-auto no-scrollbar py-1">
-              {MODES.map((m) => {
-                const isActive = currentMode === m.id;
-                return (
-                  <button
-                    key={m.id}
-                    type="button"
-                    onClick={() => {
-                      setCurrentMode(m.id);
-                      setFeedback(null);
-                    }}
-                    className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                      isActive
-                        ? 'bg-blue-600 text-white shadow-sm font-bold'
-                        : 'bg-slate-950 text-slate-400 hover:text-slate-200 border border-slate-800/80'
-                    }`}
-                  >
-                    {m.label}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Fila 3: KPI Resumido superior */}
-            <div className="mt-2 pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs">
-              <div className="flex items-center space-x-2">
-                <span className="text-slate-400 font-medium">Turno:</span>
-                <span className="font-bold text-slate-200 uppercase">{MODES.find(m => m.id === currentMode)?.label}</span>
-                <span className="text-[11px] text-slate-500 font-mono">({MODES.find(m => m.id === currentMode)?.schedule})</span>
-              </div>
-              <div className="flex items-center space-x-1.5 font-mono text-[11px]">
-                <span className="text-emerald-400 font-bold">{registeredCount}</span>
-                <span className="text-slate-500">/</span>
-                <span className="text-slate-400">{totalCount}</span>
-                <span className="text-slate-500">({percentage}%)</span>
-              </div>
-            </div>
-          </header>
-
-          {/* CUERPO PRINCIPAL */}
-          <main className="flex-1 px-3.5 py-3 flex flex-col space-y-3 pb-24">
-
-            {/* VISTA 1: ESCANEO Y ENTRADA */}
-            {currentView === 'scan' && (
-              <div className="flex-1 flex flex-col space-y-3">
-                
-                {/* CAJA DE ENTRADA MANUAL O PISTOLA */}
-                <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-sm">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                      Lector de Pulsera o Identificador
-                    </span>
-                    <span className="text-[10px] text-slate-500 font-mono">Pistola HID / Teclado</span>
+                {/* Formulario de Login */}
+                <form onSubmit={handleLoginSubmit} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-4">
+                  <div>
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-300 block mb-2">
+                      1. Selecciona tu perfil profesional:
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {STAFF_ROLES.map((r) => {
+                        const isSelected = currentUser.role === r.id;
+                        return (
+                          <button
+                            key={r.id}
+                            type="button"
+                            onClick={() => setCurrentUser(prev => ({ ...prev, role: r.id }))}
+                            className={`p-2.5 rounded-xl border text-center transition-all ${
+                              isSelected
+                                ? 'bg-blue-600 text-white border-blue-400 shadow-md ring-2 ring-blue-500/30'
+                                : 'bg-slate-950 text-slate-400 border-slate-800 hover:border-slate-700'
+                            }`}
+                          >
+                            <span className="text-[10px] font-mono font-bold uppercase block opacity-80">{r.badge}</span>
+                            <span className="text-xs font-bold block mt-0.5">{r.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
 
-                  <form onSubmit={handleFormSubmit} className="relative">
+                  <div>
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-300 block mb-1.5">
+                      2. Nombre del profesional en turno:
+                    </label>
                     <input
-                      ref={inputRef}
                       type="text"
-                      value={inputCode}
-                      onChange={(e) => setInputCode(e.target.value)}
-                      placeholder="Pasa la pulsera o pulsa un menor abajo..."
-                      className="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 text-white font-mono text-sm px-3.5 py-3 rounded-lg outline-none placeholder:text-slate-500 transition-all pr-24"
-                      autoComplete="off"
-                      autoCapitalize="characters"
-                      spellCheck="false"
+                      required
+                      value={currentUser.name}
+                      onChange={(e) => setCurrentUser(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="Ej: Laura Sánchez, Carlos Ruiz..."
+                      className="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 text-white text-sm px-3.5 py-2.5 rounded-xl outline-none placeholder:text-slate-500"
                     />
+                  </div>
 
-                    {inputCode && (
-                      <button
-                        type="button"
-                        onClick={() => setInputCode('')}
-                        className="absolute right-20 top-2.5 text-slate-400 hover:text-white p-1 text-xs"
-                      >
-                        ✕
-                      </button>
-                    )}
+                  {/* Acceso Rápido de Demo */}
+                  <div className="pt-1">
+                    <span className="text-[10px] text-slate-500 block mb-1 font-semibold uppercase">Perfiles rápidos demo:</span>
+                    <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
+                      {[
+                        { role: 'educador', name: 'Laura Sánchez' },
+                        { role: 'ate', name: 'Carlos Ruiz' },
+                        { role: 'mediador', name: 'Youssef Alami' }
+                      ].map((demoUser, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setCurrentUser(demoUser)}
+                          className="text-[10px] px-2 py-1 bg-slate-950 text-slate-300 rounded border border-slate-800 hover:border-blue-500/60"
+                        >
+                          {demoUser.name} ({demoUser.role.toUpperCase()})
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-98 mt-2"
+                  >
+                    Iniciar Turno ➔
+                  </button>
+                </form>
+              </div>
+
+              <div className="text-center py-4 text-[11px] text-slate-500">
+                Sistema seguro para centros residenciales · Versión Demo
+              </div>
+            </div>
+          )}
+
+          {/* ============================================================ */}
+          {/* PANTALLA 2: MENÚ PRINCIPAL DOBLE (RECUENTO / AÑADIR MENOR)    */}
+          {/* ============================================================ */}
+          {navScreen === 'menu' && (
+            <div className="flex-1 flex flex-col justify-between p-4">
+              <div>
+                {/* Cabecera del Menú */}
+                <header className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 shadow-sm mb-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2.5">
+                      <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center font-black text-white text-xs border border-blue-400/30">
+                        KD
+                      </div>
+                      <div>
+                        <div className="flex items-center space-x-1.5">
+                          <span className="font-extrabold text-sm text-white">KODIME</span>
+                          <span className="text-[10px] font-mono px-1 py-0.2 rounded bg-slate-800 text-slate-300 border border-slate-700">v1.2</span>
+                        </div>
+                        <p className="text-[10px] text-slate-400">
+                          Operador: <strong className="text-slate-200">{currentUser.name}</strong> ({STAFF_ROLES.find(r => r.id === currentUser.role)?.label})
+                        </p>
+                      </div>
+                    </div>
 
                     <button
-                      type="submit"
-                      className="absolute right-1.5 top-1.5 bottom-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs uppercase px-3 rounded-md transition-colors"
+                      type="button"
+                      onClick={() => setNavScreen('auth')}
+                      className="text-[11px] font-semibold text-slate-400 hover:text-white px-2 py-1 bg-slate-950 rounded border border-slate-800"
                     >
-                      Validar
+                      Salir
                     </button>
-                  </form>
+                  </div>
+                </header>
 
-                  {/* BANCO DE MENORES DE PRUEBA RÁPIDA (PULSAR SIN ABRIR TECLADO) */}
-                  <div className="mt-3 pt-2.5 border-t border-slate-800/80">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-[11px] font-semibold text-slate-400">
-                        Prueba rápida táctil:
+                <div className="mb-3 px-1">
+                  <h2 className="text-base font-black text-white">Panel de Gestión</h2>
+                  <p className="text-xs text-slate-400">Selecciona el módulo para iniciar la operativa:</p>
+                </div>
+
+                {/* LOS 2 GRANDES APARTADOS DEL MENÚ */}
+                <div className="grid grid-cols-1 gap-3.5">
+                  
+                  {/* BOTÓN 1: RECUENTO */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNavScreen('recount');
+                      setRecountView('scan');
+                    }}
+                    className="p-5 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-850 border-2 border-blue-500/50 hover:border-blue-400 text-left transition-all active:scale-98 shadow-xl relative overflow-hidden group"
+                  >
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl group-hover:bg-blue-500/20 transition-all"></div>
+                    
+                    <div className="flex items-start justify-between relative z-10">
+                      <div className="w-12 h-12 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-xl shadow-md">
+                        📋
+                      </div>
+                      <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                        {registeredCount} / {totalCount} Fichados
                       </span>
-                      <span className="text-[10px] text-slate-500">Toca para registrar</span>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => processScan('ID-001')}
-                        className="p-2 rounded-lg bg-slate-950 border border-amber-500/40 hover:border-amber-400 text-left transition-all active:scale-95"
-                      >
-                        <div className="text-[10px] font-mono font-bold text-amber-400">ID-001 (Celíaco)</div>
-                        <div className="text-xs font-semibold text-slate-200 truncate">Juan Pérez</div>
-                        <div className="text-[9px] text-amber-300 font-mono mt-0.5">Sin gluten</div>
-                      </button>
+                    <div className="mt-3 relative z-10">
+                      <h3 className="text-lg font-black text-white group-hover:text-blue-300 transition-colors">
+                        Recuento y Control de Accesos
+                      </h3>
+                      <p className="text-xs text-slate-300 mt-1 leading-snug">
+                        Control por turnos (comidas, meriendas, móviles) con pistola lectora o selección táctil.
+                      </p>
+                    </div>
 
-                      <button
-                        type="button"
-                        onClick={() => processScan('ID-002')}
-                        className="p-2 rounded-lg bg-slate-950 border border-slate-700/80 hover:border-slate-500 text-left transition-all active:scale-95"
-                      >
-                        <div className="text-[10px] font-mono font-bold text-slate-400">ID-002 (Ordinario)</div>
-                        <div className="text-xs font-semibold text-slate-200 truncate">Sofía Gómez</div>
-                        <div className="text-[9px] text-slate-400 font-mono mt-0.5">Estándar</div>
-                      </button>
+                    <div className="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400 relative z-10">
+                      <span>Turno activo: <strong className="text-slate-200 uppercase">{MODES.find(m => m.id === currentMode)?.label}</strong></span>
+                      <span className="text-blue-400 font-bold">Abrir recuento ➔</span>
+                    </div>
+                  </button>
 
+                  {/* BOTÓN 2: AÑADIR MENOR */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormSuccessMessage(null);
+                      setNavScreen('add_minor');
+                    }}
+                    className="p-5 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-850 border border-slate-800 hover:border-emerald-500/60 text-left transition-all active:scale-98 shadow-xl relative overflow-hidden group"
+                  >
+                    <div className="flex items-start justify-between relative z-10">
+                      <div className="w-12 h-12 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-xl shadow-md">
+                        ➕
+                      </div>
+                      <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30">
+                        Alta Rápida
+                      </span>
+                    </div>
+
+                    <div className="mt-3 relative z-10">
+                      <h3 className="text-lg font-black text-white group-hover:text-emerald-300 transition-colors">
+                        Añadir Nuevo Menor
+                      </h3>
+                      <p className="text-xs text-slate-300 mt-1 leading-snug">
+                        Formulario de filiación completa: progenitores, lugar y fecha de nacimiento, procedencia y asignación de pulsera.
+                      </p>
+                    </div>
+
+                    <div className="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400 relative z-10">
+                      <span>Asignación automática de pulsera nominal</span>
+                      <span className="text-emerald-400 font-bold">Nuevo registro ➔</span>
+                    </div>
+                  </button>
+
+                </div>
+              </div>
+
+              {/* Pie con métricas de la sesión */}
+              <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-slate-400 flex items-center justify-between">
+                <span>Total residentes dados de alta: <strong className="text-white font-mono">{totalCount}</strong></span>
+                <span className="font-mono text-emerald-400">{currentTimeStr}</span>
+              </div>
+            </div>
+          )}
+
+          {/* ============================================================ */}
+          {/* PANTALLA 3: FORMULARIO AÑADIR MENOR                           */}
+          {/* ============================================================ */}
+          {navScreen === 'add_minor' && (
+            <div className="flex-1 flex flex-col justify-between">
+              {/* Header con botón para volver al menú */}
+              <header className="bg-slate-900/95 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40 px-3.5 py-3 shadow-sm flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => setNavScreen('menu')}
+                  className="text-xs font-bold text-blue-400 hover:text-blue-300 flex items-center gap-1 bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800"
+                >
+                  ← Menú Principal
+                </button>
+                <span className="font-bold text-sm text-white">Alta de Residente</span>
+                <span className="text-[10px] text-slate-400 font-mono">KODIME</span>
+              </header>
+
+              <main className="flex-1 px-3.5 py-3 overflow-y-auto space-y-3.5 pb-20">
+                {formSuccessMessage && (
+                  <div className="p-4 rounded-xl bg-emerald-950/80 border-2 border-emerald-500 shadow-lg text-center animate-bounce">
+                    <span className="text-2xl">✓</span>
+                    <h4 className="font-black text-sm text-white mt-1">¡Menor Registrado con Éxito!</h4>
+                    <p className="text-xs text-emerald-200 mt-0.5">
+                      <strong>{formSuccessMessage.name}</strong> vinculado con código:
+                    </p>
+                    <div className="mt-2 flex items-center justify-center gap-2 font-mono">
+                      <span className="px-2 py-1 rounded bg-slate-900 text-blue-400 font-bold text-xs border border-blue-500/40">{formSuccessMessage.id}</span>
+                      <span className="px-2 py-1 rounded bg-slate-900 text-emerald-400 font-bold text-xs border border-emerald-500/40">{formSuccessMessage.wristband}</span>
+                    </div>
+                    <div className="mt-3 flex gap-2">
                       <button
                         type="button"
-                        onClick={() => processScan('ID-004')}
-                        className="p-2 rounded-lg bg-slate-950 border border-rose-500/40 hover:border-rose-400 text-left transition-all active:scale-95"
+                        onClick={() => {
+                          setFormSuccessMessage(null);
+                          setNavScreen('recount');
+                        }}
+                        className="flex-1 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs"
                       >
-                        <div className="text-[10px] font-mono font-bold text-rose-400">ID-004 (Crítico)</div>
-                        <div className="text-xs font-semibold text-slate-200 truncate">Lucas Silva</div>
-                        <div className="text-[9px] text-rose-300 font-mono mt-0.5">Frutos secos</div>
+                        Ir al Recuento a Probarlo ➔
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormSuccessMessage(null)}
+                        className="py-2 px-3 rounded-lg bg-slate-800 text-slate-300 text-xs font-semibold"
+                      >
+                        Añadir Otro
                       </button>
                     </div>
                   </div>
+                )}
+
+                <form onSubmit={handleSaveNewMinor} className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 space-y-3 shadow-md">
+                  
+                  {/* Foto de Perfil Simulación */}
+                  <div className="flex items-center space-x-3 p-2 bg-slate-950 rounded-lg border border-slate-800">
+                    <div className="w-12 h-12 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-xl font-bold text-slate-300">
+                      📷
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-slate-200 block">Fotografía del Menor</span>
+                      <span className="text-[10px] text-slate-400 block">Identificación visual nominal para el expediente</span>
+                    </div>
+                  </div>
+
+                  {/* Nombres y Apellidos */}
+                  <div>
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                      Nombres y Apellidos *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={newMinorForm.name}
+                      onChange={(e) => setNewMinorForm({ ...newMinorForm, name: e.target.value })}
+                      placeholder="Ej: Karim Ben Barek"
+                      className="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 text-white text-xs px-3 py-2.5 rounded-lg outline-none"
+                    />
+                  </div>
+
+                  {/* Nombre Padre y Madre */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                        Nombre del Padre
+                      </label>
+                      <input
+                        type="text"
+                        value={newMinorForm.fatherName}
+                        onChange={(e) => setNewMinorForm({ ...newMinorForm, fatherName: e.target.value })}
+                        placeholder="Nombre completo"
+                        className="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 text-white text-xs px-3 py-2 rounded-lg outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                        Nombre de la Madre
+                      </label>
+                      <input
+                        type="text"
+                        value={newMinorForm.motherName}
+                        onChange={(e) => setNewMinorForm({ ...newMinorForm, motherName: e.target.value })}
+                        placeholder="Nombre completo"
+                        className="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 text-white text-xs px-3 py-2 rounded-lg outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Lugar y Fecha de Nacimiento */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                        Lugar de Nacimiento
+                      </label>
+                      <input
+                        type="text"
+                        value={newMinorForm.birthPlace}
+                        onChange={(e) => setNewMinorForm({ ...newMinorForm, birthPlace: e.target.value })}
+                        placeholder="Ej: Tetuán / Madrid"
+                        className="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 text-white text-xs px-3 py-2 rounded-lg outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                        Fecha de Nacimiento
+                      </label>
+                      <input
+                        type="date"
+                        value={newMinorForm.birthDate}
+                        onChange={(e) => setNewMinorForm({ ...newMinorForm, birthDate: e.target.value })}
+                        className="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 text-white text-xs px-3 py-2 rounded-lg outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* País de Procedencia y Ubicación */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                        País de Procedencia
+                      </label>
+                      <select
+                        value={newMinorForm.originCountry}
+                        onChange={(e) => setNewMinorForm({ ...newMinorForm, originCountry: e.target.value })}
+                        className="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 text-white text-xs px-3 py-2 rounded-lg outline-none"
+                      >
+                        <option value="España">España</option>
+                        <option value="Marruecos">Marruecos</option>
+                        <option value="Argelia">Argelia</option>
+                        <option value="Senegal">Senegal</option>
+                        <option value="Colombia">Colombia</option>
+                        <option value="Otro">Otro país</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                        Pabellón / Habitación
+                      </label>
+                      <input
+                        type="text"
+                        value={newMinorForm.zone}
+                        onChange={(e) => setNewMinorForm({ ...newMinorForm, zone: e.target.value })}
+                        placeholder="Ej: Pabellón A · Hab. 106"
+                        className="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 text-white text-xs px-3 py-2 rounded-lg outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Alergias / Protocolo Médico */}
+                  <div>
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                      Protocolo Dietético / Médico
+                    </label>
+                    <select
+                      value={newMinorForm.medicalAlert}
+                      onChange={(e) => setNewMinorForm({ ...newMinorForm, medicalAlert: e.target.value })}
+                      className="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 text-white text-xs px-3 py-2 rounded-lg outline-none mb-1.5"
+                    >
+                      <option value="none">Sin restricciones (Menú Ordinario)</option>
+                      <option value="celiac">🌾 Celíaco (Menú Sin Gluten)</option>
+                      <option value="halal">🥩 Menú Halal Certificado</option>
+                      <option value="nuts">🥜 Alergia a Frutos Secos (EpiPen)</option>
+                      <option value="other">⚠️ Otra patología o alergia</option>
+                    </select>
+
+                    {newMinorForm.medicalAlert !== 'none' && (
+                      <input
+                        type="text"
+                        value={newMinorForm.medicalDetails}
+                        onChange={(e) => setNewMinorForm({ ...newMinorForm, medicalDetails: e.target.value })}
+                        placeholder="Detalles médicos adicionales..."
+                        className="w-full bg-slate-950 border border-amber-500/50 text-amber-200 text-xs px-3 py-2 rounded-lg outline-none placeholder:text-slate-600"
+                      />
+                    )}
+                  </div>
+
+                  {/* Asignación Automática Aviso */}
+                  <div className="p-2.5 rounded-lg bg-blue-950/30 border border-blue-500/30 text-[11px] text-blue-200 flex items-center justify-between font-mono">
+                    <span>ID sugerido: <strong>ID-{String(minors.length + 1).padStart(3, '0')}</strong></span>
+                    <span>Pulsera: <strong>Asignación Automática</strong></span>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-98"
+                  >
+                    Guardar Menor y Asignar Pulsera
+                  </button>
+                </form>
+              </main>
+            </div>
+          )}
+
+          {/* ============================================================ */}
+          {/* PANTALLA 4: RECUENTO (CON LOS 6 TURNOS, ESCANER Y RESUMEN)   */}
+          {/* ============================================================ */}
+          {navScreen === 'recount' && (
+            <div className="flex-1 flex flex-col justify-between">
+              
+              {/* HEADER CON BOTÓN AL MENÚ Y CONTROLADOR DEL TURNO */}
+              <header className="bg-slate-900/95 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40 px-3.5 pt-3 pb-2.5 shadow-sm">
+                
+                {/* Fila 1: Regreso al Menú + Logo + Reloj */}
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center space-x-2">
+                    <button
+                      type="button"
+                      onClick={() => setNavScreen('menu')}
+                      className="text-[11px] font-bold text-blue-400 bg-slate-950 px-2 py-1 rounded border border-slate-800 flex items-center gap-1"
+                    >
+                      ← Menú
+                    </button>
+                    <div>
+                      <span className="font-extrabold text-sm text-white">Recuento</span>
+                      <span className="text-[10px] text-slate-400 font-medium ml-1.5">
+                        ({currentUser.name})
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="font-mono text-xs font-semibold text-slate-300 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
+                    {currentTimeStr || '12:00:00'}
+                  </div>
                 </div>
 
-                {/* TARJETA DINÁMICA DE FEEDBACK (ÉXITO / DUPLICADO / ALERTA) */}
-                {feedback ? (
-                  <div className={`rounded-xl border p-4 shadow-lg transition-all ${
-                    feedback.status === 'success' 
-                      ? 'bg-slate-900 border-emerald-500/80' 
-                      : feedback.status === 'duplicate'
-                      ? 'bg-slate-900 border-rose-500/80 ring-1 ring-rose-500/40'
-                      : 'bg-slate-900 border-amber-500/80'
-                  }`}>
+                {/* Fila 2: Selector de los 6 turnos requeridos */}
+                <div className="flex items-center space-x-1 overflow-x-auto no-scrollbar py-1">
+                  {MODES.map((m) => {
+                    const isActive = currentMode === m.id;
+                    return (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => {
+                          setCurrentMode(m.id);
+                          setFeedback(null);
+                        }}
+                        className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                          isActive
+                            ? 'bg-blue-600 text-white shadow-sm font-bold'
+                            : 'bg-slate-950 text-slate-400 hover:text-slate-200 border border-slate-800/80'
+                        }`}
+                      >
+                        {m.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Fila 3: KPI Resumido superior */}
+                <div className="mt-2 pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-slate-400 font-medium">Turno:</span>
+                    <span className="font-bold text-slate-200 uppercase">{MODES.find(m => m.id === currentMode)?.label}</span>
+                    <span className="text-[11px] text-slate-500 font-mono">({MODES.find(m => m.id === currentMode)?.schedule})</span>
+                  </div>
+                  <div className="flex items-center space-x-1.5 font-mono text-[11px]">
+                    <span className="text-emerald-400 font-bold">{registeredCount}</span>
+                    <span className="text-slate-500">/</span>
+                    <span className="text-slate-400">{totalCount}</span>
+                    <span className="text-slate-500">({percentage}%)</span>
+                  </div>
+                </div>
+              </header>
+
+              {/* CUERPO PRINCIPAL DEL RECUENTO */}
+              <main className="flex-1 px-3.5 py-3 flex flex-col space-y-3 pb-24">
+
+                {/* SUBVISTA A: ESCÁNER / ENTRADA */}
+                {recountView === 'scan' && (
+                  <div className="flex-1 flex flex-col space-y-3">
                     
-                    {/* Encabezado del feedback */}
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center space-x-2.5">
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm ${
-                          feedback.status === 'success'
-                            ? 'bg-emerald-500 text-slate-950'
-                            : feedback.status === 'duplicate'
-                            ? 'bg-rose-500 text-white'
-                            : 'bg-amber-500 text-slate-950'
-                        }`}>
-                          {feedback.status === 'success' ? '✓' : '!'}
-                        </div>
-                        <div>
-                          <span className={`text-[10px] font-bold uppercase tracking-wider ${
-                            feedback.status === 'success' ? 'text-emerald-400' : 'text-rose-400'
-                          }`}>
-                            {feedback.status === 'success' ? 'Validación Correcta' : 'Aviso de Acceso'}
-                          </span>
-                          <h3 className="text-sm font-bold text-white leading-tight">
-                            {feedback.message}
-                          </h3>
-                        </div>
+                    {/* Caja de escáner */}
+                    <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-sm">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                          Lector de Pulsera o Identificador
+                        </span>
+                        <span className="text-[10px] text-slate-500 font-mono">Pistola HID / Teclado</span>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => setFeedback(null)}
-                        className="text-slate-400 hover:text-white p-1 rounded bg-slate-800 text-xs"
-                      >
-                        ✕
-                      </button>
+                      <form onSubmit={(e) => { e.preventDefault(); processScan(inputCode); }} className="relative">
+                        <input
+                          ref={inputRef}
+                          type="text"
+                          value={inputCode}
+                          onChange={(e) => setInputCode(e.target.value)}
+                          placeholder="Pasa la pulsera o pulsa un menor abajo..."
+                          className="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 text-white font-mono text-sm px-3.5 py-3 rounded-lg outline-none placeholder:text-slate-500 transition-all pr-24"
+                          autoComplete="off"
+                          autoCapitalize="characters"
+                          spellCheck="false"
+                        />
+
+                        {inputCode && (
+                          <button
+                            type="button"
+                            onClick={() => setInputCode('')}
+                            className="absolute right-20 top-2.5 text-slate-400 hover:text-white p-1 text-xs"
+                          >
+                            ✕
+                          </button>
+                        )}
+
+                        <button
+                          type="submit"
+                          className="absolute right-1.5 top-1.5 bottom-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs uppercase px-3 rounded-md transition-colors"
+                        >
+                          Validar
+                        </button>
+                      </form>
+
+                      {/* Botones de prueba táctil (sin abrir teclado móvil) */}
+                      <div className="mt-3 pt-2.5 border-t border-slate-800/80">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-[11px] font-semibold text-slate-400">
+                            Prueba rápida táctil:
+                          </span>
+                          <span className="text-[10px] text-slate-500">Toca para registrar</span>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => processScan('ID-001')}
+                            className="p-2 rounded-lg bg-slate-950 border border-amber-500/40 hover:border-amber-400 text-left transition-all active:scale-95"
+                          >
+                            <div className="text-[10px] font-mono font-bold text-amber-400">ID-001 (Celíaco)</div>
+                            <div className="text-xs font-semibold text-slate-200 truncate">Juan Pérez</div>
+                            <div className="text-[9px] text-amber-300 font-mono mt-0.5">Sin gluten</div>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => processScan('ID-002')}
+                            className="p-2 rounded-lg bg-slate-950 border border-slate-700/80 hover:border-slate-500 text-left transition-all active:scale-95"
+                          >
+                            <div className="text-[10px] font-mono font-bold text-slate-400">ID-002 (Ordinario)</div>
+                            <div className="text-xs font-semibold text-slate-200 truncate">Sofía Gómez</div>
+                            <div className="text-[9px] text-slate-400 font-mono mt-0.5">Estándar</div>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => processScan(minors[0]?.id || 'ID-004')}
+                            className="p-2 rounded-lg bg-slate-950 border border-blue-500/40 hover:border-blue-400 text-left transition-all active:scale-95"
+                          >
+                            <div className="text-[10px] font-mono font-bold text-blue-400">{minors[0]?.id} (Último)</div>
+                            <div className="text-xs font-semibold text-slate-200 truncate">{minors[0]?.name}</div>
+                            <div className="text-[9px] text-slate-400 font-mono mt-0.5">Reciente</div>
+                          </button>
+                        </div>
+                      </div>
                     </div>
 
-                    {/* ALERTA DE DUPLICADO */}
-                    {feedback.status === 'duplicate' && feedback.previousTime && (
-                      <div className="mt-3 p-3 bg-rose-500/10 border border-rose-500/40 rounded-lg text-center">
-                        <p className="text-xs text-rose-200">
-                          Este menor ya fue registrado en el turno de <strong className="uppercase">{currentMode}</strong>:
-                        </p>
-                        <p className="text-xl font-black font-mono text-rose-400 mt-0.5">
-                          {feedback.previousTime}
-                        </p>
-                        <p className="text-[10px] text-rose-300/70 mt-0.5">
-                          Nuevo intento bloqueado a las {feedback.timestamp}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* FICHA TÉCNICA DEL MENOR */}
-                    {feedback.minor && (
-                      <div className="mt-3 bg-slate-950 rounded-lg p-3 border border-slate-800">
-                        <div className="flex items-center space-x-2.5 mb-2">
-                          <div className="w-10 h-10 rounded-lg bg-slate-800 text-slate-200 flex items-center justify-center font-mono font-bold text-xs border border-slate-700">
-                            {feedback.minor.initials}
-                          </div>
-                          <div>
-                            <div className="flex items-center space-x-1.5">
-                              <span className="font-mono text-[10px] font-bold text-blue-400 bg-blue-500/10 px-1 py-0.2 rounded border border-blue-500/20">
-                                {feedback.minor.id}
-                              </span>
-                              <span className="text-[10px] font-mono text-slate-400">
-                                {feedback.minor.wristband}
-                              </span>
+                    {/* Ficha dinámica de feedback */}
+                    {feedback ? (
+                      <div className={`rounded-xl border p-4 shadow-lg transition-all ${
+                        feedback.status === 'success' 
+                          ? 'bg-slate-900 border-emerald-500/80' 
+                          : feedback.status === 'duplicate'
+                          ? 'bg-slate-900 border-rose-500/80 ring-1 ring-rose-500/40'
+                          : 'bg-slate-900 border-amber-500/80'
+                      }`}>
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center space-x-2.5">
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm ${
+                              feedback.status === 'success' ? 'bg-emerald-500 text-slate-950' :
+                              feedback.status === 'duplicate' ? 'bg-rose-500 text-white' : 'bg-amber-500 text-slate-950'
+                            }`}>
+                              {feedback.status === 'success' ? '✓' : '!'}
                             </div>
-                            <h4 className="text-sm font-bold text-white mt-0.5">
-                              {feedback.minor.name}
-                            </h4>
-                            <p className="text-[11px] text-slate-400">
-                              {feedback.minor.age} años · {feedback.minor.zone}
-                            </p>
+                            <div>
+                              <span className={`text-[10px] font-bold uppercase tracking-wider ${
+                                feedback.status === 'success' ? 'text-emerald-400' : 'text-rose-400'
+                              }`}>
+                                {feedback.status === 'success' ? 'Validación Correcta' : 'Aviso de Acceso'}
+                              </span>
+                              <h3 className="text-sm font-bold text-white leading-tight">
+                                {feedback.message}
+                              </h3>
+                            </div>
                           </div>
+
+                          <button
+                            type="button"
+                            onClick={() => setFeedback(null)}
+                            className="text-slate-400 hover:text-white p-1 rounded bg-slate-800 text-xs"
+                          >
+                            ✕
+                          </button>
                         </div>
 
-                        {/* TARJETA DE ALERTA MÉDICA / DIETA (ALTO CONTRASTE) */}
-                        {feedback.minor.medical && (
-                          <div className="mt-2 p-2.5 rounded-lg border border-amber-500/50 bg-amber-500/10 text-amber-200">
-                            <div className="flex items-center space-x-1.5 mb-0.5">
-                              <span className="text-[9px] font-bold uppercase tracking-wider bg-amber-500 text-slate-950 px-1 py-0.2 rounded font-mono">
-                                {feedback.minor.medical.type}
-                              </span>
-                            </div>
-                            <h5 className="font-bold text-xs text-amber-300">
-                              {feedback.minor.medical.title}
-                            </h5>
-                            <p className="text-[11px] text-amber-200/90 mt-0.5">
-                              {feedback.minor.medical.description}
+                        {feedback.status === 'duplicate' && feedback.previousTime && (
+                          <div className="mt-3 p-3 bg-rose-500/10 border border-rose-500/40 rounded-lg text-center">
+                            <p className="text-xs text-rose-200">
+                              Este menor ya fue registrado en el turno de <strong className="uppercase">{currentMode}</strong>:
+                            </p>
+                            <p className="text-xl font-black font-mono text-rose-400 mt-0.5">
+                              {feedback.previousTime}
+                            </p>
+                            <p className="text-[10px] text-rose-300/70 mt-0.5">
+                              Fichado por: {feedback.registeredBy || 'Personal'}
                             </p>
                           </div>
                         )}
 
-                        {/* DATOS ADICIONALES */}
-                        <div className="mt-2.5 pt-2 border-t border-slate-800/80 grid grid-cols-2 gap-2 text-[11px]">
-                          <div>
-                            <span className="text-slate-500 block">Monitor Asignado:</span>
-                            <span className="font-medium text-slate-300">{feedback.minor.monitor}</span>
-                          </div>
-                          <div>
-                            <span className="text-slate-500 block">Hora de Registro:</span>
-                            <span className="font-mono font-bold text-emerald-400">{feedback.timestamp}</span>
-                          </div>
-                          {currentMode === 'moviles' && (
-                            <div className="col-span-2 bg-slate-900 p-2 rounded border border-slate-800 mt-1">
-                              <span className="text-[10px] text-slate-400 block font-semibold">Dispositivo Vinculado:</span>
-                              <span className="text-xs text-white font-mono">{feedback.minor.phoneModel}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={() => setFeedback(null)}
-                      className="w-full mt-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-semibold text-slate-200 border border-slate-700 transition-colors"
-                    >
-                      Aceptar y continuar escaneo
-                    </button>
-                  </div>
-                ) : (
-                  /* ESTADO DE ESPERA LIMPIO */
-                  <div className="flex-1 flex flex-col items-center justify-center p-6 text-center bg-slate-900/40 rounded-xl border border-dashed border-slate-800">
-                    <div className="w-10 h-10 rounded-lg bg-slate-800/60 border border-slate-700 flex items-center justify-center text-slate-300 font-mono text-sm mb-2.5">
-                      RF
-                    </div>
-                    <h3 className="text-sm font-semibold text-slate-200">
-                      Dispositivo listo para lectura
-                    </h3>
-                    <p className="text-xs text-slate-400 mt-1 max-w-xs">
-                      Acerca el lector a la pulsera del residente o usa los accesos de prueba táctil de arriba.
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* VISTA 2: PANEL DE RESUMEN CON FILTRADO EN LOS KPIS */}
-            {currentView === 'summary' && (
-              <div className="flex-1 flex flex-col space-y-3">
-                
-                {/* 3 KPIS INTERACTIVOS: AL CLICAR FILTRAN DIRECTAMENTE */}
-                <div className="grid grid-cols-3 gap-2">
-                  {/* KPI: TOTAL */}
-                  <button
-                    type="button"
-                    onClick={() => setSummaryFilter('all')}
-                    className={`p-2.5 rounded-xl border text-center transition-all ${
-                      summaryFilter === 'all'
-                        ? 'bg-slate-800 border-blue-500 ring-2 ring-blue-500/30'
-                        : 'bg-slate-900 border-slate-800 hover:border-slate-700'
-                    }`}
-                  >
-                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Total</span>
-                    <p className="text-lg font-black text-white font-mono mt-0.5">{totalCount}</p>
-                    <span className="text-[9px] text-slate-500 block">Ver todos</span>
-                  </button>
-
-                  {/* KPI: PASADOS / FICHADOS */}
-                  <button
-                    type="button"
-                    onClick={() => setSummaryFilter('passed')}
-                    className={`p-2.5 rounded-xl border text-center transition-all ${
-                      summaryFilter === 'passed'
-                        ? 'bg-emerald-950/60 border-emerald-500 ring-2 ring-emerald-500/30'
-                        : 'bg-slate-900 border-slate-800 hover:border-emerald-500/40'
-                    }`}
-                  >
-                    <span className="text-[10px] uppercase font-bold text-emerald-400 block">Fichados</span>
-                    <p className="text-lg font-black text-emerald-400 font-mono mt-0.5">{registeredCount}</p>
-                    <span className="text-[9px] text-emerald-300/70 block">Solo pasados</span>
-                  </button>
-
-                  {/* KPI: PENDIENTES */}
-                  <button
-                    type="button"
-                    onClick={() => setSummaryFilter('pending')}
-                    className={`p-2.5 rounded-xl border text-center transition-all ${
-                      summaryFilter === 'pending'
-                        ? 'bg-rose-950/60 border-rose-500 ring-2 ring-rose-500/30'
-                        : 'bg-slate-900 border-slate-800 hover:border-rose-500/40'
-                    }`}
-                  >
-                    <span className="text-[10px] uppercase font-bold text-rose-400 block">Pendientes</span>
-                    <p className="text-lg font-black text-rose-400 font-mono mt-0.5">{pendingCount}</p>
-                    <span className="text-[9px] text-rose-300/70 block">Faltan</span>
-                  </button>
-                </div>
-
-                {/* FILTROS ADICIONALES Y BUSCADOR */}
-                <div className="bg-slate-900 border border-slate-800 rounded-xl p-2.5 space-y-2">
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Buscar por nombre, habitación o alergia..."
-                      className="w-full bg-slate-950 border border-slate-700 text-xs rounded-lg px-3 py-2 text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500"
-                    />
-                    {searchQuery && (
-                      <button
-                        type="button"
-                        onClick={() => setSearchQuery('')}
-                        className="absolute right-2.5 top-2 text-slate-400 hover:text-white text-xs"
-                      >
-                        ✕
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="flex items-center justify-between text-xs pt-1">
-                    <span className="text-[11px] text-slate-400 font-medium">Filtro activo:</span>
-                    <div className="flex gap-1">
-                      <button
-                        type="button"
-                        onClick={() => setSummaryFilter('allergies')}
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded border transition-colors ${
-                          summaryFilter === 'allergies'
-                            ? 'bg-amber-500 text-slate-950 border-amber-400'
-                            : 'bg-slate-800 text-amber-300 border-amber-500/30'
-                        }`}
-                      >
-                        Dietas / Alergias
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* LISTADO DE RESIDENTES FILTRADO */}
-                <div className="flex-1 overflow-y-auto space-y-1.5 pr-0.5 max-h-[50vh]">
-                  {MINORS_DATA
-                    .filter((m) => {
-                      const isReg = !!activeRecords[m.id];
-                      if (summaryFilter === 'passed' && !isReg) return false;
-                      if (summaryFilter === 'pending' && isReg) return false;
-                      if (summaryFilter === 'allergies' && !m.medical) return false;
-
-                      if (!searchQuery) return true;
-                      const q = searchQuery.toLowerCase();
-                      return (
-                        m.name.toLowerCase().includes(q) ||
-                        m.id.toLowerCase().includes(q) ||
-                        m.zone.toLowerCase().includes(q) ||
-                        (m.medical && m.medical.title.toLowerCase().includes(q))
-                      );
-                    })
-                    .map((kid) => {
-                      const record = activeRecords[kid.id];
-                      const isReg = !!record;
-
-                      return (
-                        <div
-                          key={kid.id}
-                          className={`p-2.5 rounded-lg border transition-all ${
-                            isReg
-                              ? 'bg-slate-900/80 border-emerald-500/40'
-                              : 'bg-slate-900/40 border-slate-800'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-2.5 truncate mr-2">
-                              <div className="w-8 h-8 rounded bg-slate-800 text-slate-200 flex-shrink-0 flex items-center justify-center font-mono font-bold text-[11px] border border-slate-700">
-                                {kid.initials}
+                        {feedback.minor && (
+                          <div className="mt-3 bg-slate-950 rounded-lg p-3 border border-slate-800">
+                            <div className="flex items-center space-x-2.5 mb-2">
+                              <div className="w-10 h-10 rounded-lg bg-slate-800 text-slate-200 flex items-center justify-center font-mono font-bold text-xs border border-slate-700">
+                                {feedback.minor.initials}
                               </div>
-                              <div className="truncate">
+                              <div>
                                 <div className="flex items-center space-x-1.5">
-                                  <span className="font-mono text-[9px] font-bold text-slate-400 bg-slate-800 px-1 py-0.2 rounded">
-                                    {kid.id}
+                                  <span className="font-mono text-[10px] font-bold text-blue-400 bg-blue-500/10 px-1 py-0.2 rounded border border-blue-500/20">
+                                    {feedback.minor.id}
                                   </span>
-                                  <h4 className="font-bold text-xs text-white truncate">
-                                    {kid.name}
-                                  </h4>
+                                  <span className="text-[10px] font-mono text-slate-400">
+                                    {feedback.minor.wristband}
+                                  </span>
                                 </div>
-                                <p className="text-[10px] text-slate-400 truncate mt-0.5">
-                                  {kid.zone} · Mon: {kid.monitor}
+                                <h4 className="text-sm font-bold text-white mt-0.5">
+                                  {feedback.minor.name}
+                                </h4>
+                                <p className="text-[11px] text-slate-400">
+                                  {feedback.minor.age} años · {feedback.minor.zone}
                                 </p>
                               </div>
                             </div>
 
-                            <button
-                              type="button"
-                              onClick={() => handleToggleManual(kid.id)}
-                              className={`px-2.5 py-1 rounded text-xs font-bold transition-all flex-shrink-0 ${
+                            {feedback.minor.medical && (
+                              <div className="mt-2 p-2.5 rounded-lg border border-amber-500/50 bg-amber-500/10 text-amber-200">
+                                <span className="text-[9px] font-bold uppercase tracking-wider bg-amber-500 text-slate-950 px-1 py-0.2 rounded font-mono">
+                                  {feedback.minor.medical.type}
+                                </span>
+                                <h5 className="font-bold text-xs text-amber-300 mt-1">
+                                  {feedback.minor.medical.title}
+                                </h5>
+                                <p className="text-[11px] text-amber-200/90 mt-0.5">
+                                  {feedback.minor.medical.description}
+                                </p>
+                              </div>
+                            )}
+
+                            <div className="mt-2.5 pt-2 border-t border-slate-800/80 grid grid-cols-2 gap-2 text-[11px]">
+                              <div>
+                                <span className="text-slate-500 block">Registrado Por:</span>
+                                <span className="font-medium text-slate-300">{feedback.registeredBy || currentUser.name}</span>
+                              </div>
+                              <div>
+                                <span className="text-slate-500 block">Hora de Registro:</span>
+                                <span className="font-mono font-bold text-emerald-400">{feedback.timestamp}</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => setFeedback(null)}
+                          className="w-full mt-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-semibold text-slate-200 border border-slate-700 transition-colors"
+                        >
+                          Aceptar y continuar escaneo
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center bg-slate-900/40 rounded-xl border border-dashed border-slate-800">
+                        <div className="w-10 h-10 rounded-lg bg-slate-800/60 border border-slate-700 flex items-center justify-center text-slate-300 font-mono text-sm mb-2.5">
+                          RF
+                        </div>
+                        <h3 className="text-sm font-semibold text-slate-200">
+                          Dispositivo listo para lectura
+                        </h3>
+                        <p className="text-xs text-slate-400 mt-1 max-w-xs">
+                          Acerca el lector a la pulsera del residente o usa los accesos de prueba táctil.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* SUBVISTA B: RESUMEN Y ASISTENCIA CON KPIS FILTRABLES */}
+                {recountView === 'summary' && (
+                  <div className="flex-1 flex flex-col space-y-3">
+                    
+                    {/* 3 KPIS INTERACTIVOS QUE FILTRAN AL CLICAR */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setSummaryFilter('all')}
+                        className={`p-2.5 rounded-xl border text-center transition-all ${
+                          summaryFilter === 'all'
+                            ? 'bg-slate-800 border-blue-500 ring-2 ring-blue-500/30'
+                            : 'bg-slate-900 border-slate-800 hover:border-slate-700'
+                        }`}
+                      >
+                        <span className="text-[10px] uppercase font-bold text-slate-400 block">Total</span>
+                        <p className="text-lg font-black text-white font-mono mt-0.5">{totalCount}</p>
+                        <span className="text-[9px] text-slate-500 block">Ver todos</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setSummaryFilter('passed')}
+                        className={`p-2.5 rounded-xl border text-center transition-all ${
+                          summaryFilter === 'passed'
+                            ? 'bg-emerald-950/60 border-emerald-500 ring-2 ring-emerald-500/30'
+                            : 'bg-slate-900 border-slate-800 hover:border-emerald-500/40'
+                        }`}
+                      >
+                        <span className="text-[10px] uppercase font-bold text-emerald-400 block">Fichados</span>
+                        <p className="text-lg font-black text-emerald-400 font-mono mt-0.5">{registeredCount}</p>
+                        <span className="text-[9px] text-emerald-300/70 block">Solo pasados</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setSummaryFilter('pending')}
+                        className={`p-2.5 rounded-xl border text-center transition-all ${
+                          summaryFilter === 'pending'
+                            ? 'bg-rose-950/60 border-rose-500 ring-2 ring-rose-500/30'
+                            : 'bg-slate-900 border-slate-800 hover:border-rose-500/40'
+                        }`}
+                      >
+                        <span className="text-[10px] uppercase font-bold text-rose-400 block">Pendientes</span>
+                        <p className="text-lg font-black text-rose-400 font-mono mt-0.5">{pendingCount}</p>
+                        <span className="text-[9px] text-rose-300/70 block">Faltan</span>
+                      </button>
+                    </div>
+
+                    {/* Buscador */}
+                    <div className="bg-slate-900 border border-slate-800 rounded-xl p-2.5 space-y-2">
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          placeholder="Buscar por nombre, habitación o alergia..."
+                          className="w-full bg-slate-950 border border-slate-700 text-xs rounded-lg px-3 py-2 text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500"
+                        />
+                        {searchQuery && (
+                          <button
+                            type="button"
+                            onClick={() => setSearchQuery('')}
+                            className="absolute right-2.5 top-2 text-slate-400 hover:text-white text-xs"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs pt-1">
+                        <span className="text-[11px] text-slate-400 font-medium">Filtro:</span>
+                        <button
+                          type="button"
+                          onClick={() => setSummaryFilter('allergies')}
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded border transition-colors ${
+                            summaryFilter === 'allergies'
+                              ? 'bg-amber-500 text-slate-950 border-amber-400'
+                              : 'bg-slate-800 text-amber-300 border-amber-500/30'
+                          }`}
+                        >
+                          Dietas / Alergias
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Lista filtrada de residentes */}
+                    <div className="flex-1 overflow-y-auto space-y-1.5 pr-0.5 max-h-[50vh]">
+                      {minors
+                        .filter((m) => {
+                          const isReg = !!activeRecords[m.id];
+                          if (summaryFilter === 'passed' && !isReg) return false;
+                          if (summaryFilter === 'pending' && isReg) return false;
+                          if (summaryFilter === 'allergies' && !m.medical) return false;
+
+                          if (!searchQuery) return true;
+                          const q = searchQuery.toLowerCase();
+                          return (
+                            m.name.toLowerCase().includes(q) ||
+                            m.id.toLowerCase().includes(q) ||
+                            m.zone.toLowerCase().includes(q) ||
+                            (m.medical && m.medical.title.toLowerCase().includes(q))
+                          );
+                        })
+                        .map((kid) => {
+                          const record = activeRecords[kid.id];
+                          const isReg = !!record;
+
+                          return (
+                            <div
+                              key={kid.id}
+                              className={`p-2.5 rounded-lg border transition-all ${
                                 isReg
-                                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30'
-                                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
+                                  ? 'bg-slate-900/80 border-emerald-500/40'
+                                  : 'bg-slate-900/40 border-slate-800'
                               }`}
                             >
-                              {isReg ? '✓ Fichado' : '+ Fichar'}
-                            </button>
-                          </div>
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-2.5 truncate mr-2">
+                                  <div className="w-8 h-8 rounded bg-slate-800 text-slate-200 flex-shrink-0 flex items-center justify-center font-mono font-bold text-[11px] border border-slate-700">
+                                    {kid.initials}
+                                  </div>
+                                  <div className="truncate">
+                                    <div className="flex items-center space-x-1.5">
+                                      <span className="font-mono text-[9px] font-bold text-slate-400 bg-slate-800 px-1 py-0.2 rounded">
+                                        {kid.id}
+                                      </span>
+                                      <h4 className="font-bold text-xs text-white truncate">
+                                        {kid.name}
+                                      </h4>
+                                    </div>
+                                    <p className="text-[10px] text-slate-400 truncate mt-0.5">
+                                      {kid.zone} · {kid.originCountry || 'España'}
+                                    </p>
+                                  </div>
+                                </div>
 
-                          {kid.medical && (
-                            <div className="mt-1.5 pt-1 border-t border-slate-800/80 flex items-center space-x-1 text-[10px] font-semibold text-amber-300">
-                              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0"></span>
-                              <span className="truncate">{kid.medical.title}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleManual(kid.id)}
+                                  className={`px-2.5 py-1 rounded text-xs font-bold transition-all flex-shrink-0 ${
+                                    isReg
+                                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30'
+                                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
+                                  }`}
+                                >
+                                  {isReg ? '✓ Fichado' : '+ Fichar'}
+                                </button>
+                              </div>
+
+                              {kid.medical && (
+                                <div className="mt-1.5 pt-1 border-t border-slate-800/80 flex items-center space-x-1 text-[10px] font-semibold text-amber-300">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0"></span>
+                                  <span className="truncate">{kid.medical.title}</span>
+                                </div>
+                              )}
+
+                              {isReg && record.timestamp && (
+                                <div className="mt-1 text-[9px] font-mono text-emerald-400/80 text-right">
+                                  Fichado a las {record.timestamp} por {record.registeredBy || currentUser.name}
+                                </div>
+                              )}
                             </div>
-                          )}
+                          );
+                        })}
+                    </div>
 
-                          {isReg && record.timestamp && (
-                            <div className="mt-1 text-[9px] font-mono text-emerald-400/80 text-right">
-                              Registrado a las {record.timestamp}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                </div>
+                    <div className="pt-2 flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleResetSession}
+                        className="flex-1 py-2 px-3 rounded-lg bg-rose-950/30 hover:bg-rose-900/40 text-rose-300 text-xs font-semibold border border-rose-800/40 transition-colors"
+                      >
+                        Reiniciar {MODES.find(m => m.id === currentMode)?.label}
+                      </button>
 
-                {/* ACCIONES DE CIERRE Y REINICIO */}
-                <div className="pt-2 flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={handleResetSession}
-                    className="flex-1 py-2 px-3 rounded-lg bg-rose-950/30 hover:bg-rose-900/40 text-rose-300 text-xs font-semibold border border-rose-800/40 transition-colors"
-                  >
-                    Reiniciar {MODES.find(m => m.id === currentMode)?.label}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      alert(`Informe del turno ${MODES.find(m => m.id === currentMode)?.label}:\nRegistrados: ${registeredCount}\nPendientes: ${pendingCount}\nTotal: ${totalCount}`);
-                    }}
-                    className="py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700"
-                  >
-                    Exportar
-                  </button>
-                </div>
-              </div>
-            )}
-          </main>
-
-          {/* BARRA INFERIOR DE NAVEGACIÓN */}
-          <nav className="fixed bottom-0 left-0 right-0 bg-slate-950/95 backdrop-blur-lg border-t border-slate-800 px-6 py-2 z-50 max-w-md mx-auto">
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setCurrentView('scan')}
-                className={`py-2 px-3 rounded-lg text-xs font-bold transition-all text-center ${
-                  currentView === 'scan'
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200 bg-slate-900/60 border border-slate-800'
-                }`}
-              >
-                Lector / Entrada
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setCurrentView('summary')}
-                className={`py-2 px-3 rounded-lg text-xs font-bold transition-all text-center relative ${
-                  currentView === 'summary'
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200 bg-slate-900/60 border border-slate-800'
-                }`}
-              >
-                <span>Resumen ({registeredCount})</span>
-                {registeredCount > 0 && (
-                  <span className="absolute top-1.5 right-3 w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          alert(`Informe del turno ${MODES.find(m => m.id === currentMode)?.label} (${currentUser.name}):\nRegistrados: ${registeredCount}\nPendientes: ${pendingCount}\nTotal: ${totalCount}`);
+                        }}
+                        className="py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700"
+                      >
+                        Exportar
+                      </button>
+                    </div>
+                  </div>
                 )}
-              </button>
+              </main>
+
+              {/* BARRA INFERIOR DE NAVEGACIÓN DENTRO DE RECUENTO */}
+              <nav className="fixed bottom-0 left-0 right-0 bg-slate-950/95 backdrop-blur-lg border-t border-slate-800 px-6 py-2 z-50 max-w-md mx-auto">
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setRecountView('scan')}
+                    className={`py-2 px-3 rounded-lg text-xs font-bold transition-all text-center ${
+                      recountView === 'scan'
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'text-slate-400 hover:text-slate-200 bg-slate-900/60 border border-slate-800'
+                    }`}
+                  >
+                    Lector / Entrada
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setRecountView('summary')}
+                    className={`py-2 px-3 rounded-lg text-xs font-bold transition-all text-center relative ${
+                      recountView === 'summary'
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'text-slate-400 hover:text-slate-200 bg-slate-900/60 border border-slate-800'
+                    }`}
+                  >
+                    <span>Resumen ({registeredCount})</span>
+                    {registeredCount > 0 && (
+                      <span className="absolute top-1.5 right-3 w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                    )}
+                  </button>
+                </div>
+              </nav>
+
             </div>
-          </nav>
+          )}
 
         </div>
       );

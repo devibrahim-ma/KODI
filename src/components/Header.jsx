@@ -7,29 +7,38 @@ export function Header({
   registeredCount,
   totalCount,
   currentTimeStr,
+  onBackToMenu,
+  operatorName
 }) {
   const percentage = Math.round((registeredCount / totalCount) * 100) || 0;
   const currentModeObj = MODES.find((m) => m.id === currentMode);
 
   return (
     <header className="bg-slate-900/95 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40 px-3.5 pt-3 pb-2.5 shadow-sm">
-      {/* Brand & live clock */}
-      <div className="flex items-center justify-between mb-2.5">
-        <div className="flex items-center space-x-2.5">
-          <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-black tracking-wider text-white text-xs border border-blue-400/30 shadow-sm">
-            KD
-          </div>
+      {/* Brand & live clock with back to menu */}
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center space-x-2">
+          {onBackToMenu && (
+            <button
+              type="button"
+              onClick={onBackToMenu}
+              className="text-[11px] font-bold text-blue-400 bg-slate-950 px-2 py-1 rounded border border-slate-800 flex items-center gap-1 hover:text-blue-300"
+            >
+              ← Menú
+            </button>
+          )}
           <div>
-            <div className="flex items-center space-x-1.5">
-              <span className="font-extrabold text-sm tracking-tight text-white">KODI</span>
-              <span className="text-[10px] font-mono uppercase px-1 py-0.2 rounded bg-slate-800 text-slate-300 border border-slate-700">v1.2</span>
-            </div>
-            <p className="text-[10px] text-slate-400 font-medium">Control Residencial de Accesos</p>
+            <span className="font-extrabold text-sm text-white">Recuento</span>
+            {operatorName && (
+              <span className="text-[10px] text-slate-400 font-medium ml-1.5">
+                ({operatorName})
+              </span>
+            )}
           </div>
         </div>
 
         <div className="text-right">
-          <div className="font-mono text-xs font-semibold text-slate-300 bg-slate-950 px-2 py-1 rounded border border-slate-800 inline-flex items-center gap-1.5">
+          <div className="font-mono text-xs font-semibold text-slate-300 bg-slate-950 px-2 py-0.5 rounded border border-slate-800 inline-flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
             {currentTimeStr || '12:00:00'}
           </div>
