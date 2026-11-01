@@ -1,0 +1,2117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#090d16">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  
+  
+  <!-- Typography: Inter & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS Play CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+          },
+          colors: {
+            slate: {
+              950: '#070a12',
+              900: '#0e1422',
+              850: '#131b2e',
+              800: '#1b253d',
+              700: '#2a3756',
+            },
+            kodi: {
+              50: '#eef6ff',
+              100: '#d9ebff',
+              500: '#2563eb',
+              600: '#1d4ed8',
+              700: '#1e40af',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- React 18 & ReactDOM -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  
+  <!-- Babel Standalone for in-browser execution -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    input, textarea {
+      user-select: text;
+    }
+    /* Hide horizontal scrollbar for clean app experience */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 antialiased min-h-screen">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // Web Audio API Synthesizer (Zero-latency institutional beeps)
+    const playAudioFeedback = (type) => {
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+
+        if (type === 'success') {
+          // Double harmonic chime (High confidence)
+          const now = ctx.currentTime;
+          const osc1 = ctx.createOscillator();
+          const gain1 = ctx.createGain();
+          osc1.type = 'sine';
+          osc1.frequency.setValueAtTime(659.25, now); // E5
+          osc1.frequency.exponentialRampToValueAtTime(880, now + 0.1); // A5
+          gain1.gain.setValueAtTime(0.2, now);
+          gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+          osc1.connect(gain1);
+          gain1.connect(ctx.destination);
+          osc1.start(now);
+          osc1.stop(now + 0.22);
+
+          const osc2 = ctx.createOscillator();
+          const gain2 = ctx.createGain();
+          osc2.type = 'triangle';
+          osc2.frequency.setValueAtTime(880, now + 0.1);
+          osc2.frequency.exponentialRampToValueAtTime(1318.5, now + 0.3); // E6
+          gain2.gain.setValueAtTime(0.18, now + 0.1);
+          gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+          osc2.connect(gain2);
+          gain2.connect(ctx.destination);
+          osc2.start(now + 0.1);
+          osc2.stop(now + 0.35);
+        } else if (type === 'duplicate' || type === 'error') {
+          // Low reject pulse
+          const now = ctx.currentTime;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(240, now);
+          osc.frequency.setValueAtTime(180, now + 0.12);
+          gain.gain.setValueAtTime(0.28, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.38);
+        } else if (type === 'beep') {
+          const now = ctx.currentTime;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(1174.66, now);
+          gain.gain.setValueAtTime(0.12, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.06);
+        }
+      } catch (e) {}
+    };
+
+    const triggerHaptic = (pattern) => {
+      if (window.navigator && window.navigator.vibrate) {
+        try { window.navigator.vibrate(pattern); } catch (e) {}
+      }
+    };
+
+    // 6 TURNOS OFICIALES SEGÚN REQUERIMIENTO
+    const MODES = [
+      { id: 'desayuno', label: 'Desayuno', schedule: '08:00 - 09:30' },
+      { id: 'mediodia', label: 'Medio Día', schedule: '11:30 - 12:30' },
+      { id: 'comida', label: 'Comida', schedule: '13:30 - 15:30' },
+      { id: 'merienda', label: 'Merienda', schedule: '17:30 - 18:30' },
+      { id: 'cena', label: 'Cena', schedule: '20:30 - 22:00' },
+      { id: 'moviles', label: 'Móviles', schedule: 'Control y Custodia' }
+    ];
+
+    // DATASET DE 15 MENORES CON PROTOCOLOS MÉDICOS Y DIETAS
+    const MINORS_DATA = [
+      {
+        id: 'ID-001',
+        wristband: 'PUL-8491',
+        name: 'Juan Pérez Morales',
+        age: 12,
+        zone: 'Pabellón A · Hab. 101',
+        monitor: 'Carlos Ruiz',
+        phoneModel: 'Xiaomi Redmi Note 11',
+        initials: 'JP',
+        medical: {
+          hasAlert: true,
+          type: 'Alergia Alimentaria',
+          title: 'CELÍACO ESTRICTO (SIN GLUTEN)',
+          description: 'Control estricto de trazas y contaminación cruzada.',
+          severity: 'high'
+        }
+      },
+      {
+        id: 'ID-002',
+        wristband: 'PUL-3920',
+        name: 'Sofía Gómez Ruiz',
+        age: 14,
+        zone: 'Pabellón B · Hab. 204',
+        monitor: 'Laura Sánchez',
+        phoneModel: 'iPhone 12',
+        initials: 'SG',
+        medical: null
+      },
+      {
+        id: 'ID-003',
+        wristband: 'PUL-5512',
+        name: 'Mohamed Amine Dahbi',
+        age: 13,
+        zone: 'Pabellón A · Hab. 103',
+        monitor: 'Carlos Ruiz',
+        phoneModel: 'Samsung Galaxy A33',
+        initials: 'MA',
+        medical: {
+          hasAlert: true,
+          type: 'Dieta Cultural',
+          title: 'MENÚ HALAL CERTIFICADO',
+          description: 'Sin carne de cerdo ni derivados no certificados.',
+          severity: 'medium'
+        }
+      },
+      {
+        id: 'ID-004',
+        wristband: 'PUL-1092',
+        name: 'Lucas Silva Da Costa',
+        age: 11,
+        zone: 'Pabellón A · Hab. 101',
+        monitor: 'Carlos Ruiz',
+        phoneModel: 'Motorola Moto G52',
+        initials: 'LS',
+        medical: {
+          hasAlert: true,
+          type: 'Alerta Crítica',
+          title: 'ALERGIA SEVERA A FRUTOS SECOS',
+          description: 'Riesgo de anafilaxia. Dispone de auto-inyector EpiPen en enfermería.',
+          severity: 'high'
+        }
+      },
+      {
+        id: 'ID-005',
+        wristband: 'PUL-7734',
+        name: 'Elena Vega Navarro',
+        age: 15,
+        zone: 'Pabellón B · Hab. 201',
+        monitor: 'Ana Beltrán',
+        phoneModel: 'Samsung S20 FE',
+        initials: 'EV',
+        medical: null
+      },
+      {
+        id: 'ID-006',
+        wristband: 'PUL-4481',
+        name: 'Mateo Romero Castro',
+        age: 10,
+        zone: 'Pabellón A · Hab. 105',
+        monitor: 'Carlos Ruiz',
+        phoneModel: 'Realme C55',
+        initials: 'MR',
+        medical: {
+          hasAlert: true,
+          type: 'Intolerancia Severa',
+          title: 'INTOLERANCIA A LA LACTOSA',
+          description: 'Suministrar bebidas vegetales y menús sin derivados lácteos.',
+          severity: 'medium'
+        }
+      },
+      {
+        id: 'ID-007',
+        wristband: 'PUL-2299',
+        name: 'Lucía Santos Blanco',
+        age: 13,
+        zone: 'Pabellón B · Hab. 203',
+        monitor: 'Laura Sánchez',
+        phoneModel: 'iPhone 11',
+        initials: 'LS',
+        medical: null
+      },
+      {
+        id: 'ID-008',
+        wristband: 'PUL-9811',
+        name: 'Daniel Martínez Soler',
+        age: 12,
+        zone: 'Pabellón A · Hab. 104',
+        monitor: 'Carlos Ruiz',
+        phoneModel: 'Oppo A78',
+        initials: 'DM',
+        medical: {
+          hasAlert: true,
+          type: 'Alergia Alimentaria',
+          title: 'ALERGIA A PESCADO Y MARISCO',
+          description: 'Sustituir por proteínas alternativas verificadas.',
+          severity: 'high'
+        }
+      },
+      {
+        id: 'ID-009',
+        wristband: 'PUL-6632',
+        name: 'Ainhoa García Ibáñez',
+        age: 14,
+        zone: 'Pabellón B · Hab. 204',
+        monitor: 'Ana Beltrán',
+        phoneModel: 'Xiaomi 12 Lite',
+        initials: 'AG',
+        medical: {
+          hasAlert: true,
+          type: 'Control Clínico',
+          title: 'DIABETES TIPO 1 (CONTROL PREVIO)',
+          description: 'Revisión obligatoria de glucemia previa con monitor antes de la ingesta.',
+          severity: 'high'
+        }
+      },
+      {
+        id: 'ID-010',
+        wristband: 'PUL-3145',
+        name: 'Youssef Benali',
+        age: 11,
+        zone: 'Pabellón A · Hab. 102',
+        monitor: 'Laura Sánchez',
+        phoneModel: 'Redmi 10C',
+        initials: 'YB',
+        medical: {
+          hasAlert: true,
+          type: 'Dieta Cultural',
+          title: 'MENÚ HALAL CERTIFICADO',
+          description: 'Carne y productos conformes a normativa Halal.',
+          severity: 'medium'
+        }
+      },
+      {
+        id: 'ID-011',
+        wristband: 'PUL-8821',
+        name: 'Martina Fernández Díaz',
+        age: 16,
+        zone: 'Pabellón B · Hab. 202',
+        monitor: 'Ana Beltrán',
+        phoneModel: 'iPhone 13',
+        initials: 'MF',
+        medical: {
+          hasAlert: true,
+          type: 'Régimen Dietético',
+          title: 'DIETA VEGETARIANA',
+          description: 'Menú ovo-lacto-vegetariano estricto.',
+          severity: 'medium'
+        }
+      },
+      {
+        id: 'ID-012',
+        wristband: 'PUL-5003',
+        name: 'Pau Costa Rovira',
+        age: 12,
+        zone: 'Pabellón A · Hab. 105',
+        monitor: 'Carlos Ruiz',
+        phoneModel: 'Poco X5 Pro',
+        initials: 'PC',
+        medical: null
+      },
+      {
+        id: 'ID-013',
+        wristband: 'PUL-1944',
+        name: 'Carmen Delgado Ortiz',
+        age: 13,
+        zone: 'Pabellón B · Hab. 205',
+        monitor: 'Laura Sánchez',
+        phoneModel: 'Samsung Galaxy A14',
+        initials: 'CD',
+        medical: {
+          hasAlert: true,
+          type: 'Alergia Alimentaria',
+          title: 'ALERGIA AL HUEVO',
+          description: 'Prohibición de alimentos con huevo o trazas de ovoproductos.',
+          severity: 'high'
+        }
+      },
+      {
+        id: 'ID-014',
+        wristband: 'PUL-7210',
+        name: 'Alejandro Moreno Gil',
+        age: 15,
+        zone: 'Pabellón A · Hab. 103',
+        monitor: 'Carlos Ruiz',
+        phoneModel: 'Xiaomi Redmi 12',
+        initials: 'AM',
+        medical: null
+      },
+      {
+        id: 'ID-015',
+        wristband: 'PUL-6091',
+        name: 'Salma Khattabi',
+        age: 10,
+        zone: 'Pabellón B · Hab. 201',
+        monitor: 'Ana Beltrán',
+        phoneModel: 'Motorola E22',
+        initials: 'SK',
+        medical: {
+          hasAlert: true,
+          type: 'Dieta Combinada',
+          title: 'HALAL + EXENTO DE LACTOSA',
+          description: 'Doble restricción: Halal estricto y sin derivados lácteos.',
+          severity: 'high'
+        }
+      }
+    ];
+
+    const STORAGE_KEYS = {
+      MINORS: 'kodi_minors_db',
+      RECORDS: 'kodi_records_db',
+      SYNC_QUEUE: 'kodi_sync_queue',
+      LAST_SYNC: 'kodi_last_sync'
+    };
+
+    const STAFF_ROLES = [
+      { id: 'coordinador', label: 'Coordinador/a' },
+      { id: 'educador', label: 'Educador/a' },
+      { id: 'ate', label: 'ATE' },
+      { id: 'sanitario', label: 'Sanitario/a' },
+    ];
+
+    const SamuEmblem = ({ className = 'w-6 h-6' }) => (
+      <svg className={className} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="16" cy="16" r="15" stroke="currentColor" strokeWidth="2" fill="none"/>
+        <path d="M16 8v16M8 16h16" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
+      </svg>
+    );
+
+    function App() {
+      const [currentUser, setCurrentUser] = useState({ role: 'educador', name: 'Laura Sánchez' });
+      const [loginForm, setLoginForm] = useState({ name: '', role: 'educador' });
+      const [navScreen, setNavScreen] = useState('auth'); // 'auth' | 'menu' | 'minors_list' | 'add_minor' | 'recount'
+      const [currentView, setCurrentView] = useState('scan'); // 'scan' | 'summary'  (dentro de recount)
+      const [currentMode, setCurrentMode] = useState('comida');
+
+      // Estado offline-first: menores
+      const [minors, setMinors] = useState(() => {
+        try {
+          const stored = localStorage.getItem(STORAGE_KEYS.MINORS);
+          if (stored !== null) return JSON.parse(stored);
+        } catch (e) {}
+        return MINORS_DATA;
+      });
+
+      // Estado offline-first: registros de turnos
+      const [records, setRecords] = useState(() => {
+        try {
+          const stored = localStorage.getItem(STORAGE_KEYS.RECORDS);
+          if (stored !== null) return JSON.parse(stored);
+        } catch (e) {}
+        return { desayuno: {}, mediodia: {}, comida: {}, merienda: {}, cena: {}, moviles: {} };
+      });
+
+      // Estado de conexión y cola de sincronización
+      const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
+      const [syncQueue, setSyncQueue] = useState(() => {
+        try {
+          const stored = localStorage.getItem(STORAGE_KEYS.SYNC_QUEUE);
+          return stored ? JSON.parse(stored) : [];
+        } catch (e) { return []; }
+      });
+
+      const [inputCode, setInputCode] = useState('');
+      const [summaryFilter, setSummaryFilter] = useState('all');
+      const [searchQuery, setSearchQuery] = useState('');
+      const [searchTermMinors, setSearchTermMinors] = useState('');
+      const [currentTimeStr, setCurrentTimeStr] = useState('');
+      const [feedback, setFeedback] = useState(null);
+      const [screenFlash, setScreenFlash] = useState(null);
+      const [showAdvancedFiliation, setShowAdvancedFiliation] = useState(false);
+      const [isProcessingPhoto, setIsProcessingPhoto] = useState(false);
+      const [newMinorForm, setNewMinorForm] = useState({
+        name: '', photo: '', fatherName: '', motherName: '',
+        birthPlace: '', birthDate: '', originCountry: 'España',
+        zone: 'Pabellón A · Hab. 101', medicalAlert: 'none', medicalDetails: ''
+      });
+
+      const inputRef = useRef(null);
+      const cameraInputRef = useRef(null);
+      const galleryInputRef = useRef(null);
+
+      // Persistencia automática
+      useEffect(() => {
+        try { localStorage.setItem(STORAGE_KEYS.MINORS, JSON.stringify(minors)); } catch (e) {}
+      }, [minors]);
+      useEffect(() => {
+        try { localStorage.setItem(STORAGE_KEYS.RECORDS, JSON.stringify(records)); } catch (e) {}
+      }, [records]);
+      useEffect(() => {
+        try { localStorage.setItem(STORAGE_KEYS.SYNC_QUEUE, JSON.stringify(syncQueue)); } catch (e) {}
+      }, [syncQueue]);
+
+      // Sincronización automática al recuperar conexión
+      const syncPendingChanges = () => {
+        const queue = JSON.parse(localStorage.getItem(STORAGE_KEYS.SYNC_QUEUE) || '[]');
+        if (queue.length === 0) return;
+        console.log(`[KODI SYNC] Sincronizando ${queue.length} cambios pendientes...`, queue);
+        localStorage.setItem(STORAGE_KEYS.LAST_SYNC, new Date().toISOString());
+        setSyncQueue([]);
+      };
+
+      const queueChange = (action, payload) => {
+        const item = { id: `${Date.now()}-${Math.random().toString(36).substr(2,6)}`, action, payload, timestamp: new Date().toISOString() };
+        setSyncQueue(prev => {
+          const next = [...prev, item];
+          if (navigator.onLine) setTimeout(syncPendingChanges, 500);
+          return next;
+        });
+      };
+
+      // Detectores de red
+      useEffect(() => {
+        const handleOnline = () => { setIsOnline(true); syncPendingChanges(); };
+        const handleOffline = () => setIsOnline(false);
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+        return () => { window.removeEventListener('online', handleOnline); window.removeEventListener('offline', handleOffline); };
+      }, []);
+
+      // Reloj institucional
+      useEffect(() => {
+        const updateClock = () => setCurrentTimeStr(new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+        updateClock();
+        const iv = setInterval(updateClock, 1000);
+        return () => clearInterval(iv);
+      }, []);
+
+      // Valores calculados
+      const activeRecords = records[currentMode] || {};
+      const registeredCount = Object.keys(activeRecords).length;
+      const totalCount = minors.length;
+      const pendingCount = Math.max(0, totalCount - registeredCount);
+      const operatorInfo = `${currentUser.name} (${STAFF_ROLES.find(r => r.id === currentUser.role)?.label})`;
+
+      // Compresión de foto con Canvas
+      const processImageFile = (file) => {
+        if (!file) return;
+        setIsProcessingPhoto(true);
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const maxDim = 400;
+            let w = img.width, h = img.height;
+            if (w > h) { if (w > maxDim) { h = Math.round(h * maxDim / w); w = maxDim; } }
+            else { if (h > maxDim) { w = Math.round(w * maxDim / h); h = maxDim; } }
+            canvas.width = w; canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            setNewMinorForm(prev => ({ ...prev, photo: canvas.toDataURL('image/jpeg', 0.75) }));
+            setIsProcessingPhoto(false);
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      };
+
+      const handlePhotoInput = (e) => { const f = e.target.files?.[0]; if (f) processImageFile(f); };
+
+      // Escaneo o pulsación táctil
+      const processScan = (rawCode) => {
+        const code = (rawCode || '').trim().toUpperCase();
+        if (!code) return;
+        playAudioFeedback('beep');
+        const found = minors.find(m =>
+          m.id.toUpperCase() === code ||
+          (m.wristband && m.wristband.toUpperCase() === code) ||
+          m.name.toUpperCase().includes(code)
+        );
+        const timestampStr = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        if (!found) {
+          playAudioFeedback('error'); triggerHaptic([150, 80, 150]); setScreenFlash('red');
+          setFeedback({ status: 'not_found', code, timestamp: timestampStr, message: `Código no registrado: "${code}"` });
+          setTimeout(() => setScreenFlash(null), 400);
+          setInputCode(''); return;
+        }
+        const previousRecord = activeRecords[found.id];
+        if (previousRecord) {
+          playAudioFeedback('duplicate'); triggerHaptic([250, 100, 250]); setScreenFlash('red');
+          setFeedback({ status: 'duplicate', minor: found, timestamp: timestampStr, previousTime: previousRecord.timestamp, message: 'REGISTRO PREVIO EXISTENTE' });
+          setTimeout(() => setScreenFlash(null), 500);
+        } else {
+          playAudioFeedback('success'); triggerHaptic([90]); setScreenFlash('green');
+          const newRec = { timestamp: timestampStr, registeredBy: operatorInfo };
+          setRecords(prev => ({ ...prev, [currentMode]: { ...prev[currentMode], [found.id]: newRec } }));
+          queueChange('RECORD_ATTENDANCE', { mode: currentMode, minorId: found.id, record: newRec });
+          setFeedback({ status: 'success', minor: found, timestamp: timestampStr, message: currentMode === 'moviles' ? 'Dispositivo verificado y registrado' : 'Acceso validado y registrado' });
+          setTimeout(() => setScreenFlash(null), 500);
+        }
+        setInputCode('');
+      };
+
+      const handleToggleManual = (minorId) => {
+        const isRegistered = !!activeRecords[minorId];
+        const timestampStr = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        if (isRegistered) {
+          setRecords(prev => { const copy = { ...prev[currentMode] }; delete copy[minorId]; return { ...prev, [currentMode]: copy }; });
+          queueChange('REMOVE_ATTENDANCE', { mode: currentMode, minorId });
+        } else {
+          const newRec = { timestamp: timestampStr, registeredBy: operatorInfo };
+          setRecords(prev => ({ ...prev, [currentMode]: { ...prev[currentMode], [minorId]: newRec } }));
+          queueChange('RECORD_ATTENDANCE', { mode: currentMode, minorId, record: newRec });
+          playAudioFeedback('success');
+        }
+      };
+
+      const handleResetSession = () => {
+        const label = MODES.find(m => m.id === currentMode)?.label;
+        if (confirm(`¿Reiniciar los registros de "${label}"?`)) {
+          setRecords(prev => ({ ...prev, [currentMode]: {} }));
+          queueChange('RESET_MODE', { mode: currentMode });
+          setFeedback(null);
+        }
+      };
+
+      const handleSaveNewMinor = (e) => {
+        e.preventDefault();
+        if (!newMinorForm.name.trim()) { alert('Indica el nombre y apellidos del menor.'); return; }
+        const nextIndex = minors.length + 1;
+        const generatedId = `ID-${String(nextIndex).padStart(3, '0')}`;
+        const generatedWristband = `PUL-${Math.floor(1000 + Math.random() * 9000)}`;
+        const nameParts = newMinorForm.name.trim().split(' ');
+        const initials = ((nameParts[0]?.[0] || 'X') + (nameParts[1]?.[0] || nameParts[0]?.[1] || 'M')).toUpperCase();
+        let medicalData = null;
+        if (newMinorForm.medicalAlert !== 'none') {
+          medicalData = {
+            hasAlert: true,
+            type: newMinorForm.medicalAlert === 'celiac' ? 'Alergia Alimentaria' : newMinorForm.medicalAlert === 'nuts' ? 'Alerta Crítica' : newMinorForm.medicalAlert === 'halal' ? 'Dieta Cultural' : 'Condición Médica',
+            title: newMinorForm.medicalAlert === 'celiac' ? 'CELÍACO ESTRICTO' : newMinorForm.medicalAlert === 'nuts' ? 'ALERGIA A FRUTOS SECOS' : newMinorForm.medicalAlert === 'halal' ? 'MENÚ HALAL' : 'ALERTA DIETÉTICA',
+            description: newMinorForm.medicalDetails || 'Protocolo específico asignado.',
+            severity: newMinorForm.medicalAlert === 'nuts' ? 'high' : 'medium'
+          };
+        }
+        const newChild = {
+          id: generatedId, wristband: generatedWristband,
+          name: newMinorForm.name.trim(), photo: newMinorForm.photo || '',
+          age: newMinorForm.birthDate ? Math.max(1, new Date().getFullYear() - new Date(newMinorForm.birthDate).getFullYear()) : 12,
+          zone: newMinorForm.zone || 'Pabellón A · Hab. 101', monitor: currentUser.name,
+          phoneModel: 'Pendiente', initials,
+          fatherName: newMinorForm.fatherName || '', motherName: newMinorForm.motherName || '',
+          birthPlace: newMinorForm.birthPlace || '', birthDate: newMinorForm.birthDate || '',
+          originCountry: newMinorForm.originCountry || 'España', medical: medicalData
+        };
+        setMinors(prev => [newChild, ...prev]);
+        queueChange('ADD_MINOR', newChild);
+        playAudioFeedback('success');
+        setNewMinorForm({ name: '', photo: '', fatherName: '', motherName: '', birthPlace: '', birthDate: '', originCountry: 'España', zone: 'Pabellón A · Hab. 101', medicalAlert: 'none', medicalDetails: '' });
+        setNavScreen('minors_list');
+      };
+
+      const handleDeleteMinor = (minorId) => {
+        const found = minors.find(m => m.id === minorId);
+        if (!found) return;
+        if (confirm(`¿Eliminar a "${found.name}" de la base de datos?\nEsta acción es irreversible.`)) {
+          setMinors(prev => prev.filter(m => m.id !== minorId));
+          setRecords(prev => {
+            const copy = { ...prev };
+            Object.keys(copy).forEach(mk => { if (copy[mk]?.[minorId]) { const mc = { ...copy[mk] }; delete mc[minorId]; copy[mk] = mc; } });
+            return copy;
+          });
+          queueChange('DELETE_MINOR', { id: minorId });
+          playAudioFeedback('beep');
+        }
+      };
+
+      const handleClearTestData = () => {
+        if (confirm('¿Vaciar la lista para empezar con datos reales desde cero?')) {
+          setMinors([]);
+          setRecords({ desayuno: {}, mediodia: {}, comida: {}, merienda: {}, cena: {}, moviles: {} });
+          queueChange('CLEAR_DATABASE', {});
+        }
+      };
+
+      const handleLoadTestData = () => {
+        setMinors(MINORS_DATA);
+        queueChange('RESTORE_DEMO', {});
+      };
+
+      // ─────────────────────────────────────────────
+      // JSX PRINCIPAL
+      // ─────────────────────────────────────────────
+      return (
+        <div className={`min-h-screen flex flex-col max-w-md mx-auto relative transition-colors duration-200 ${screenFlash === 'green' ? 'bg-emerald-950/20' : screenFlash === 'red' ? 'bg-rose-950/20' : ''}`}>
+
+          {/* ══════════════════════════════════════ */}
+          {/* PANTALLA 1: LOGIN                      */}
+          {/* ══════════════════════════════════════ */}
+          {navScreen === 'auth' && (
+            <div className="flex-1 flex flex-col justify-center p-6 space-y-6">
+              <div className="text-center">
+                <div className="w-16 h-16 rounded-2xl bg-blue-600 flex items-center justify-center font-black text-white text-lg mx-auto mb-3 shadow-xl border border-blue-400/30">
+                  KD
+                </div>
+                <h1 className="text-2xl font-black text-white tracking-tight">KODIME</h1>
+                <p className="text-sm text-slate-400 mt-1">Control Residencial · SAMU</p>
+              </div>
+
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-xl">
+                <div>
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">Nombre</label>
+                  <input
+                    type="text"
+                    value={loginForm.name}
+                    onChange={e => setLoginForm(f => ({ ...f, name: e.target.value }))}
+                    placeholder="Tu nombre completo"
+                    className="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 text-white text-sm px-3.5 py-2.5 rounded-xl outline-none placeholder:text-slate-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">Rol</label>
+                  <select
+                    value={loginForm.role}
+                    onChange={e => setLoginForm(f => ({ ...f, role: e.target.value }))}
+                    className="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 text-white text-sm px-3.5 py-2.5 rounded-xl outline-none"
+                  >
+                    {STAFF_ROLES.map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
+                  </select>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const name = loginForm.name.trim() || 'Operador';
+                    setCurrentUser({ role: loginForm.role, name });
+                    setNavScreen('menu');
+                  }}
+                  className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm rounded-xl transition-all shadow-md active:scale-98"
+                >
+                  Entrar
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════ */}
+          {/* PANTALLA 2: PANEL OPERATIVO            */}
+          {/* ══════════════════════════════════════ */}
+          {navScreen === 'menu' && (
+            <div className="flex-1 flex flex-col">
+              <header className="bg-slate-900/95 backdrop-blur-md border-b border-slate-800 px-4 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-black text-white text-xs border border-blue-400/30">KD</div>
+                  <div>
+                    <span className="font-extrabold text-sm text-white">KODIME</span>
+                    <p className="text-[10px] text-slate-400">{currentUser.name} · <span className="text-blue-400">{STAFF_ROLES.find(r => r.id === currentUser.role)?.label}</span></p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-xs text-slate-400">{currentTimeStr}</span>
+                  <button type="button" onClick={() => setNavScreen('auth')} className="text-[11px] font-semibold text-slate-300 hover:text-white px-2.5 py-1 bg-slate-800 rounded-lg border border-slate-700">Salir</button>
+                </div>
+              </header>
+
+              <main className="flex-1 p-4 space-y-3">
+                <h2 className="text-base font-black text-white px-1">Panel Operativo</h2>
+
+                {/* MÓDULO: RECUENTO */}
+                <button
+                  type="button"
+                  onClick={() => { setCurrentView('scan'); setFeedback(null); setNavScreen('recount'); }}
+                  className="w-full p-5 rounded-2xl bg-slate-900 border border-slate-800 hover:border-blue-500/60 text-left transition-all active:scale-98 shadow-lg group"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="w-12 h-12 rounded-xl bg-blue-600/20 text-blue-400 flex items-center justify-center text-2xl border border-blue-500/30">📋</div>
+                    <span className="text-[10px] font-mono font-bold uppercase px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                      {registeredCount} / {totalCount} fichados
+                    </span>
+                  </div>
+                  <div className="mt-4">
+                    <h3 className="text-xl font-black text-white">Recuento</h3>
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+                    <span>Turno: <strong className="text-white uppercase">{MODES.find(m => m.id === currentMode)?.label}</strong></span>
+                    <span className="text-blue-400 font-bold group-hover:translate-x-1 transition-transform">Abrir ➔</span>
+                  </div>
+                </button>
+
+                {/* MÓDULO: LISTADO DE MENORES */}
+                <button
+                  type="button"
+                  onClick={() => setNavScreen('minors_list')}
+                  className="w-full p-5 rounded-2xl bg-slate-900 border border-slate-800 hover:border-rose-500/60 text-left transition-all active:scale-98 shadow-lg group"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="w-12 h-12 rounded-xl bg-rose-600/20 text-rose-400 flex items-center justify-center text-2xl border border-rose-500/30">👥</div>
+                    <span className="text-[10px] font-mono font-bold uppercase px-2.5 py-1 rounded-full bg-rose-500/15 text-rose-300 border border-rose-500/30">
+                      {totalCount} registrados
+                    </span>
+                  </div>
+                  <div className="mt-4">
+                    <h3 className="text-xl font-black text-white">Listado de Menores</h3>
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+                    <span>Añadir · Buscar · Eliminar</span>
+                    <span className="text-rose-400 font-bold group-hover:translate-x-1 transition-transform">Ver listado ➔</span>
+                  </div>
+                </button>
+              </main>
+
+              <div className="px-4 pb-4 flex items-center justify-between text-[11px] text-slate-500">
+                <div className="flex items-center gap-1.5">
+                  <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-400' : 'bg-amber-400'}`}></span>
+                  <span>{isOnline ? 'En línea' : 'Offline'}{syncQueue.length > 0 ? ` · ${syncQueue.length} cambios pendientes` : ''}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════ */}
+          {/* PANTALLA 3: LISTADO DE MENORES         */}
+          {/* ══════════════════════════════════════ */}
+          {navScreen === 'minors_list' && (
+            <div className="flex-1 flex flex-col">
+              <header className="bg-slate-900/95 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40 px-3.5 py-3 flex items-center justify-between">
+                <button type="button" onClick={() => setNavScreen('menu')} className="text-xs font-bold text-rose-400 hover:text-rose-300 flex items-center gap-1 bg-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-800">← Panel</button>
+                <div className="text-center">
+                  <span className="font-extrabold text-sm text-white block">Listado de Menores</span>
+                  <span className="text-[10px] text-slate-400 font-mono">{minors.length} {minors.length === 1 ? 'residente' : 'residentes'}</span>
+                </div>
+                <button type="button" onClick={() => setNavScreen('add_minor')} className="text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white px-3 py-1.5 rounded-lg shadow-sm flex items-center gap-1 active:scale-95 transition-all">+ Añadir</button>
+              </header>
+
+              <main className="flex-1 px-3.5 py-3 overflow-y-auto space-y-3 pb-6">
+                {/* Buscador */}
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={searchTermMinors}
+                    onChange={e => setSearchTermMinors(e.target.value)}
+                    placeholder="Buscar por nombre, pulsera o habitación..."
+                    className="w-full bg-slate-900 border border-slate-800 focus:border-rose-500 text-white text-xs px-3.5 py-2.5 rounded-xl outline-none placeholder:text-slate-500 pr-10"
+                  />
+                  {searchTermMinors && (
+                    <button type="button" onClick={() => setSearchTermMinors('')} className="absolute right-3 top-2.5 text-slate-400 hover:text-white text-xs p-0.5">✕</button>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between text-[11px] px-1 text-slate-500">
+                  <div className="flex items-center gap-1.5">
+                    <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
+                    <span>{isOnline ? 'Base de datos en línea' : 'Modo Offline'}</span>
+                  </div>
+                  {minors.length > 0 && (
+                    <button type="button" onClick={handleClearTestData} className="text-[10px] text-slate-600 hover:text-rose-400 underline">Vaciar lista</button>
+                  )}
+                </div>
+
+                {/* Lista filtrada */}
+                {(() => {
+                  const q = searchTermMinors.toLowerCase().trim();
+                  const filtered = minors.filter(m => !q || (m.name && m.name.toLowerCase().includes(q)) || (m.id && m.id.toLowerCase().includes(q)) || (m.wristband && m.wristband.toLowerCase().includes(q)) || (m.zone && m.zone.toLowerCase().includes(q)));
+
+                  if (minors.length === 0) return (
+                    <div className="text-center py-12 px-4 bg-slate-900/40 rounded-2xl border border-dashed border-slate-800 space-y-3">
+                      <div className="w-12 h-12 rounded-2xl bg-slate-900 flex items-center justify-center text-2xl mx-auto">👥</div>
+                      <h3 className="text-sm font-bold text-white">Sin menores registrados</h3>
+                      <p className="text-xs text-slate-400">Añade los menores con su fotografía desde la cámara o galería.</p>
+                      <div className="pt-2 flex flex-col gap-2 max-w-xs mx-auto">
+                        <button type="button" onClick={() => setNavScreen('add_minor')} className="w-full py-2.5 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl shadow-md transition-all">+ Añadir Primer Menor</button>
+                        <button type="button" onClick={handleLoadTestData} className="text-xs text-slate-500 hover:text-slate-300 py-1">Cargar datos demo de ejemplo</button>
+                      </div>
+                    </div>
+                  );
+
+                  if (filtered.length === 0) return (
+                    <div className="text-center py-8 px-4 bg-slate-900/40 rounded-xl border border-slate-800">
+                      <p className="text-xs text-slate-400">Sin resultados para "{searchTermMinors}".</p>
+                      <button type="button" onClick={() => setSearchTermMinors('')} className="mt-2 text-xs text-rose-400 hover:underline">Borrar búsqueda</button>
+                    </div>
+                  );
+
+                  return (
+                    <div className="space-y-2">
+                      {filtered.map(minor => (
+                        <div key={minor.id} className="p-3 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 transition-all flex items-center gap-3 shadow-sm">
+                          <div className="flex-shrink-0">
+                            {minor.photo
+                              ? <img src={minor.photo} alt={minor.name} className="w-12 h-12 rounded-xl object-cover border border-slate-700 shadow-sm" />
+                              : <div className="w-12 h-12 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-white text-sm">{minor.initials || 'KD'}</div>
+                            }
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <h3 className="font-bold text-sm text-white truncate">{minor.name}</h3>
+                              {minor.age && <span className="text-[10px] text-slate-400">({minor.age}a)</span>}
+                            </div>
+                            <div className="flex items-center gap-1.5 mt-0.5 text-[11px] text-slate-400 truncate">
+                              <span className="font-mono text-slate-300 bg-slate-950 px-1.5 py-0.2 rounded border border-slate-800 text-[10px]">{minor.wristband || minor.id}</span>
+                              <span>·</span>
+                              <span className="truncate">{minor.zone || 'Sin habitación'}</span>
+                            </div>
+                            {minor.medical?.hasAlert && (
+                              <div className="mt-1 flex items-center gap-1">
+                                <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 truncate max-w-full">⚠️ {minor.medical.title}</span>
+                              </div>
+                            )}
+                          </div>
+                          <button type="button" onClick={() => handleDeleteMinor(minor.id)} className="p-2 rounded-lg bg-slate-950 hover:bg-rose-950/60 text-slate-500 hover:text-rose-400 border border-slate-800 hover:border-rose-800/60 transition-colors flex-shrink-0" title="Eliminar">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </main>
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════ */}
+          {/* PANTALLA 4: AÑADIR MENOR              */}
+          {/* ══════════════════════════════════════ */}
+          {navScreen === 'add_minor' && (
+            <div className="flex-1 flex flex-col">
+              <header className="bg-slate-900/95 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40 px-3.5 py-3 flex items-center justify-between">
+                <button type="button" onClick={() => setNavScreen('minors_list')} className="text-xs font-bold text-rose-400 hover:text-rose-300 flex items-center gap-1 bg-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-800">← Volver</button>
+                <span className="font-bold text-sm text-white">Añadir Menor</span>
+                <div className="w-12"></div>
+              </header>
+
+              {/* Inputs ocultos para cámara y galería */}
+              <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={handlePhotoInput} className="hidden" />
+              <input ref={galleryInputRef} type="file" accept="image/*" onChange={handlePhotoInput} className="hidden" />
+
+              <main className="flex-1 px-3.5 py-3 overflow-y-auto pb-6">
+                <form onSubmit={handleSaveNewMinor} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-4 shadow-md">
+
+                  {/* FOTO */}
+                  <div>
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-2">Fotografía</label>
+                    {newMinorForm.photo ? (
+                      <div className="flex items-center gap-3 p-3 bg-slate-950 rounded-xl border border-slate-800">
+                        <img src={newMinorForm.photo} alt="Foto" className="w-16 h-16 rounded-xl object-cover border-2 border-emerald-500 shadow-md" />
+                        <div className="flex-1">
+                          <span className="text-xs font-bold text-emerald-400 block">✓ Foto cargada</span>
+                          <div className="flex gap-2 mt-2">
+                            <button type="button" onClick={() => cameraInputRef.current?.click()} className="text-[11px] font-semibold bg-slate-800 text-slate-200 px-2.5 py-1 rounded-lg border border-slate-700">Repetir</button>
+                            <button type="button" onClick={() => setNewMinorForm(p => ({ ...p, photo: '' }))} className="text-[11px] font-semibold text-rose-400 hover:text-rose-300 px-2 py-1">Quitar</button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2">
+                        <button type="button" onClick={() => cameraInputRef.current?.click()} disabled={isProcessingPhoto} className="p-4 bg-slate-950 hover:bg-slate-900 active:scale-95 border border-slate-800 hover:border-rose-500/60 rounded-xl flex flex-col items-center gap-1 transition-all">
+                          <span className="text-2xl">📸</span>
+                          <span className="text-xs font-bold text-slate-200">Hacer Foto</span>
+                          <span className="text-[10px] text-slate-400">Cámara</span>
+                        </button>
+                        <button type="button" onClick={() => galleryInputRef.current?.click()} disabled={isProcessingPhoto} className="p-4 bg-slate-950 hover:bg-slate-900 active:scale-95 border border-slate-800 hover:border-emerald-500/60 rounded-xl flex flex-col items-center gap-1 transition-all">
+                          <span className="text-2xl">🖼️</span>
+                          <span className="text-xs font-bold text-slate-200">Galería</span>
+                          <span className="text-[10px] text-slate-400">Archivo</span>
+                        </button>
+                      </div>
+                    )}
+                    {isProcessingPhoto && <p className="text-xs text-slate-400 mt-1 text-center">Procesando imagen...</p>}
+                  </div>
+
+                  {/* NOMBRE */}
+                  <div>
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Nombre y Apellidos *</label>
+                    <input
+                      type="text" required
+                      value={newMinorForm.name}
+                      onChange={e => setNewMinorForm(p => ({ ...p, name: e.target.value }))}
+                      placeholder="Ej: Karim Ben Barek"
+                      className="w-full bg-slate-950 border border-slate-800 focus:border-rose-500 text-white text-sm px-3.5 py-2.5 rounded-xl outline-none placeholder:text-slate-500"
+                    />
+                  </div>
+
+                  {/* FECHA Y HABITACIÓN */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Fecha Nacimiento</label>
+                      <input type="date" value={newMinorForm.birthDate} onChange={e => setNewMinorForm(p => ({ ...p, birthDate: e.target.value }))} className="w-full bg-slate-950 border border-slate-800 focus:border-rose-500 text-white text-xs px-3 py-2.5 rounded-xl outline-none" />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Habitación</label>
+                      <input type="text" value={newMinorForm.zone} onChange={e => setNewMinorForm(p => ({ ...p, zone: e.target.value }))} placeholder="Hab. 101" className="w-full bg-slate-950 border border-slate-800 focus:border-rose-500 text-white text-xs px-3 py-2.5 rounded-xl outline-none" />
+                    </div>
+                  </div>
+
+                  {/* ALERGIAS / DIETA */}
+                  <div>
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Alergias / Dieta</label>
+                    <select value={newMinorForm.medicalAlert} onChange={e => setNewMinorForm(p => ({ ...p, medicalAlert: e.target.value }))} className="w-full bg-slate-950 border border-slate-800 focus:border-rose-500 text-white text-xs px-3 py-2.5 rounded-xl outline-none mb-2">
+                      <option value="none">Sin restricciones</option>
+                      <option value="celiac">🌾 Celíaco (Sin gluten)</option>
+                      <option value="nuts">🥜 Alergia a frutos secos</option>
+                      <option value="halal">🥩 Menú Halal</option>
+                      <option value="other">⚠️ Otra condición</option>
+                    </select>
+                    {newMinorForm.medicalAlert !== 'none' && (
+                      <input type="text" value={newMinorForm.medicalDetails} onChange={e => setNewMinorForm(p => ({ ...p, medicalDetails: e.target.value }))} placeholder="Detalles de la condición médica..." className="w-full bg-slate-950 border border-amber-500/50 text-amber-200 text-xs px-3 py-2 rounded-xl outline-none placeholder:text-slate-600" />
+                    )}
+                  </div>
+
+                  {/* DATOS DE FILIACIÓN (colapsable) */}
+                  <div>
+                    <button type="button" onClick={() => setShowAdvancedFiliation(!showAdvancedFiliation)} className="text-xs text-slate-400 hover:text-slate-200 flex items-center gap-1 font-semibold">
+                      <span>{showAdvancedFiliation ? '▼ Ocultar filiación' : '▶ Datos de padres y procedencia'}</span>
+                    </button>
+                    {showAdvancedFiliation && (
+                      <div className="mt-2.5 space-y-2.5 p-3 bg-slate-950 rounded-xl border border-slate-800">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-[10px] font-bold text-slate-400 block mb-1">Padre</label>
+                            <input type="text" value={newMinorForm.fatherName} onChange={e => setNewMinorForm(p => ({ ...p, fatherName: e.target.value }))} placeholder="Nombre" className="w-full bg-slate-900 border border-slate-800 text-white text-xs px-2.5 py-1.5 rounded-lg outline-none" />
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-bold text-slate-400 block mb-1">Madre</label>
+                            <input type="text" value={newMinorForm.motherName} onChange={e => setNewMinorForm(p => ({ ...p, motherName: e.target.value }))} placeholder="Nombre" className="w-full bg-slate-900 border border-slate-800 text-white text-xs px-2.5 py-1.5 rounded-lg outline-none" />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-[10px] font-bold text-slate-400 block mb-1">Lugar Nacimiento</label>
+                            <input type="text" value={newMinorForm.birthPlace} onChange={e => setNewMinorForm(p => ({ ...p, birthPlace: e.target.value }))} placeholder="Ciudad" className="w-full bg-slate-900 border border-slate-800 text-white text-xs px-2.5 py-1.5 rounded-lg outline-none" />
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-bold text-slate-400 block mb-1">País</label>
+                            <input type="text" value={newMinorForm.originCountry} onChange={e => setNewMinorForm(p => ({ ...p, originCountry: e.target.value }))} placeholder="España" className="w-full bg-slate-900 border border-slate-800 text-white text-xs px-2.5 py-1.5 rounded-lg outline-none" />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <button type="submit" className="w-full py-3 bg-rose-600 hover:bg-rose-500 text-white font-bold text-sm uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-98">
+                    Guardar Menor
+                  </button>
+                </form>
+              </main>
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════ */}
+          {/* PANTALLA 5: RECUENTO                  */}
+          {/* ══════════════════════════════════════ */}
+          {navScreen === 'recount' && (
+            <div className="flex-1 flex flex-col">
+
+              {/* Header del recuento */}
+              <header className="bg-slate-900/95 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40 px-3.5 pt-3 pb-2.5 shadow-md">
+                <div className="flex items-center justify-between mb-2">
+                  <button type="button" onClick={() => setNavScreen('menu')} className="text-xs font-bold text-blue-400 hover:text-blue-300 flex items-center gap-1 bg-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-800">← Panel</button>
+                  <div className="text-center">
+                    <span className="font-extrabold text-sm text-white block">Recuento</span>
+                    <span className="text-[10px] font-mono text-slate-400">{registeredCount}/{totalCount} · {operatorInfo}</span>
+                  </div>
+                  <span className="font-mono text-xs text-slate-400 bg-slate-950 px-2 py-1 rounded border border-slate-800">{currentTimeStr}</span>
+                </div>
+
+                {/* Selector de turnos */}
+                <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1">
+                  {MODES.map(m => {
+                    const isActive = m.id === currentMode;
+                    return (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => { setCurrentMode(m.id); setFeedback(null); }}
+                        className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${isActive ? 'bg-blue-600 text-white font-bold shadow-sm' : 'bg-slate-950 text-slate-400 hover:text-slate-200 border border-slate-800/80'}`}
+                      >
+                        {m.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </header>
+
+              {/* Barra de tabs Lector / Resumen */}
+              <div className="bg-slate-950 border-b border-slate-800 px-3.5 py-2 flex gap-2">
+                <button type="button" onClick={() => setCurrentView('scan')} className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${currentView === 'scan' ? 'bg-blue-600 text-white' : 'text-slate-400 bg-slate-900 border border-slate-800'}`}>Lector / Entrada</button>
+                <button type="button" onClick={() => setCurrentView('summary')} className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all relative ${currentView === 'summary' ? 'bg-blue-600 text-white' : 'text-slate-400 bg-slate-900 border border-slate-800'}`}>
+                  Resumen ({registeredCount})
+                  {registeredCount > 0 && <span className="absolute top-1.5 right-2.5 w-1.5 h-1.5 rounded-full bg-emerald-400"></span>}
+                </button>
+              </div>
+
+              <main className="flex-1 px-3.5 py-3 overflow-y-auto space-y-3 pb-6">
+
+                {/* ── VISTA LECTOR ── */}
+                {currentView === 'scan' && (
+                  <div className="space-y-3">
+                    {/* Input de escaneo */}
+                    <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-sm">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-300">Lector de Pulsera</span>
+                        <span className="text-[10px] text-slate-500 font-mono">HID / Teclado</span>
+                      </div>
+                      <form onSubmit={e => { e.preventDefault(); processScan(inputCode); }} className="relative">
+                        <input
+                          ref={inputRef}
+                          type="text"
+                          value={inputCode}
+                          onChange={e => setInputCode(e.target.value)}
+                          placeholder="Pasa la pulsera o escribe el ID..."
+                          className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 text-white font-mono text-sm px-3.5 py-3 rounded-lg outline-none placeholder:text-slate-500 pr-24"
+                          autoComplete="off" autoCapitalize="characters" spellCheck="false"
+                        />
+                        {inputCode && (
+                          <button type="button" onClick={() => setInputCode('')} className="absolute right-20 top-2.5 text-slate-400 hover:text-white p-1 text-xs">✕</button>
+                        )}
+                        <button type="submit" className="absolute right-1.5 top-1.5 bottom-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs uppercase px-3 rounded-md transition-colors shadow-sm">Validar</button>
+                      </form>
+
+                      {/* Fichado rápido táctil con menores reales */}
+                      {minors.length > 0 && (
+                        <div className="mt-3 pt-2.5 border-t border-slate-800">
+                          <span className="text-[11px] font-semibold text-slate-400 block mb-1.5">Fichado rápido:</span>
+                          <div className="grid grid-cols-3 gap-1.5">
+                            {minors.slice(0, 3).map(km => (
+                              <button key={km.id} type="button" onClick={() => processScan(km.id)} className="p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-blue-500 text-left transition-all active:scale-95">
+                                <div className="text-[10px] font-mono font-bold text-slate-400">{km.wristband || km.id}</div>
+                                <div className="text-xs font-semibold text-slate-200 truncate">{km.name.split(' ')[0]}</div>
+                                <div className="text-[9px] text-slate-500 font-mono mt-0.5 truncate">{km.zone}</div>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Tarjeta de feedback */}
+                    {feedback ? (
+                      <div className={`rounded-xl border p-4 shadow-lg ${feedback.status === 'success' ? 'bg-slate-900 border-emerald-500/80' : feedback.status === 'duplicate' ? 'bg-slate-900 border-rose-500/80' : 'bg-slate-900 border-amber-500/80'}`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className={`text-xs font-bold uppercase tracking-wider ${feedback.status === 'success' ? 'text-emerald-400' : feedback.status === 'duplicate' ? 'text-rose-400' : 'text-amber-400'}`}>
+                            {feedback.status === 'success' ? '✓ Acceso validado' : feedback.status === 'duplicate' ? '⚠ Registro duplicado' : '✕ No encontrado'}
+                          </span>
+                          <span className="text-[10px] font-mono text-slate-500">{feedback.timestamp}</span>
+                        </div>
+
+                        {feedback.minor && (
+                          <div className="bg-slate-950 rounded-lg p-3 border border-slate-800">
+                            <div className="flex items-center gap-2.5 mb-2">
+                              {feedback.minor.photo
+                                ? <img src={feedback.minor.photo} alt={feedback.minor.name} className="w-12 h-12 rounded-xl object-cover border border-slate-700 flex-shrink-0" />
+                                : <div className="w-10 h-10 rounded-lg bg-slate-800 text-white flex items-center justify-center font-mono font-bold text-xs border border-slate-700 flex-shrink-0">{feedback.minor.initials}</div>
+                              }
+                              <div>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="font-mono text-[10px] font-bold text-blue-400 bg-blue-500/10 px-1 py-0.2 rounded border border-blue-500/20">{feedback.minor.id}</span>
+                                  <span className="text-[10px] font-mono text-slate-400">{feedback.minor.wristband}</span>
+                                </div>
+                                <h4 className="text-sm font-bold text-white mt-0.5">{feedback.minor.name}</h4>
+                                <p className="text-[11px] text-slate-400">{feedback.minor.age} años · {feedback.minor.zone}</p>
+                              </div>
+                            </div>
+                            {feedback.minor.medical && (
+                              <div className="p-2.5 rounded-lg border border-amber-500/50 bg-amber-500/10 text-amber-200">
+                                <span className="text-[9px] font-bold uppercase tracking-wider bg-amber-500 text-slate-950 px-1 py-0.2 rounded font-mono">{feedback.minor.medical.type}</span>
+                                <h5 className="font-bold text-xs text-amber-300 mt-0.5">{feedback.minor.medical.title}</h5>
+                                <p className="text-[11px] text-amber-200/90 mt-0.5">{feedback.minor.medical.description}</p>
+                              </div>
+                            )}
+                            {feedback.status === 'duplicate' && feedback.previousTime && (
+                              <p className="text-[11px] text-rose-300 mt-2">Ya registrado a las {feedback.previousTime}</p>
+                            )}
+                          </div>
+                        )}
+
+                        {feedback.status === 'not_found' && (
+                          <p className="text-sm text-amber-300 font-mono">{feedback.message}</p>
+                        )}
+
+                        <button type="button" onClick={() => setFeedback(null)} className="w-full mt-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-semibold text-slate-200 border border-slate-700 transition-colors">
+                          Continuar escaneo
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center bg-slate-900/40 rounded-xl border border-dashed border-slate-800">
+                        <div className="w-10 h-10 rounded-lg bg-slate-800/60 border border-slate-700 flex items-center justify-center text-slate-300 font-mono text-sm mb-2.5">RF</div>
+                        <h3 className="text-sm font-semibold text-slate-200">Listo para lectura</h3>
+                        <p className="text-xs text-slate-400 mt-1">Acerca el lector a la pulsera del residente.</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* ── VISTA RESUMEN ── */}
+                {currentView === 'summary' && (
+                  <div className="space-y-3">
+                    {/* KPIs */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <button type="button" onClick={() => setSummaryFilter('all')} className={`p-2.5 rounded-xl border text-center transition-all ${summaryFilter === 'all' ? 'bg-slate-800 border-blue-500 ring-2 ring-blue-500/30' : 'bg-slate-900 border-slate-800 hover:border-slate-700'}`}>
+                        <span className="text-[10px] uppercase font-bold text-slate-400 block">Total</span>
+                        <p className="text-lg font-black text-white font-mono mt-0.5">{totalCount}</p>
+                      </button>
+                      <button type="button" onClick={() => setSummaryFilter('passed')} className={`p-2.5 rounded-xl border text-center transition-all ${summaryFilter === 'passed' ? 'bg-emerald-950/60 border-emerald-500 ring-2 ring-emerald-500/30' : 'bg-slate-900 border-slate-800 hover:border-emerald-500/40'}`}>
+                        <span className="text-[10px] uppercase font-bold text-emerald-400 block">Fichados</span>
+                        <p className="text-lg font-black text-emerald-400 font-mono mt-0.5">{registeredCount}</p>
+                      </button>
+                      <button type="button" onClick={() => setSummaryFilter('pending')} className={`p-2.5 rounded-xl border text-center transition-all ${summaryFilter === 'pending' ? 'bg-rose-950/60 border-rose-500 ring-2 ring-rose-500/30' : 'bg-slate-900 border-slate-800 hover:border-rose-500/40'}`}>
+                        <span className="text-[10px] uppercase font-bold text-rose-400 block">Pendientes</span>
+                        <p className="text-lg font-black text-rose-400 font-mono mt-0.5">{pendingCount}</p>
+                      </button>
+                    </div>
+
+                    {/* Buscador */}
+                    <div className="relative">
+                      <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Buscar por nombre, zona o alergia..." className="w-full bg-slate-950 border border-slate-700 text-xs rounded-lg px-3 py-2 text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500" />
+                      {searchQuery && <button type="button" onClick={() => setSearchQuery('')} className="absolute right-2.5 top-2 text-slate-400 hover:text-white text-xs">✕</button>}
+                    </div>
+
+                    {/* Filtro alergias */}
+                    <div className="flex justify-end">
+                      <button type="button" onClick={() => setSummaryFilter(summaryFilter === 'allergies' ? 'all' : 'allergies')} className={`text-[10px] font-bold px-2 py-0.5 rounded border transition-colors ${summaryFilter === 'allergies' ? 'bg-amber-500 text-slate-950 border-amber-400' : 'bg-slate-800 text-amber-300 border-amber-500/30'}`}>
+                        Dietas / Alergias
+                      </button>
+                    </div>
+
+                    {/* Lista de menores en resumen */}
+                    <div className="space-y-1.5">
+                      {minors.filter(m => {
+                        const isReg = !!activeRecords[m.id];
+                        if (summaryFilter === 'passed' && !isReg) return false;
+                        if (summaryFilter === 'pending' && isReg) return false;
+                        if (summaryFilter === 'allergies' && !m.medical) return false;
+                        if (!searchQuery) return true;
+                        const q = searchQuery.toLowerCase();
+                        return m.name.toLowerCase().includes(q) || m.id.toLowerCase().includes(q) || (m.zone && m.zone.toLowerCase().includes(q)) || (m.medical && m.medical.title.toLowerCase().includes(q));
+                      }).map(kid => {
+                        const record = activeRecords[kid.id];
+                        const isReg = !!record;
+                        return (
+                          <div key={kid.id} className={`p-2.5 rounded-lg border transition-all ${isReg ? 'bg-slate-900/80 border-emerald-500/40' : 'bg-slate-900/40 border-slate-800'}`}>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2.5 truncate mr-2">
+                                {kid.photo
+                                  ? <img src={kid.photo} alt={kid.name} className="w-8 h-8 rounded-lg object-cover border border-slate-700 flex-shrink-0" />
+                                  : <div className="w-8 h-8 rounded bg-slate-800 text-slate-200 flex-shrink-0 flex items-center justify-center font-mono font-bold text-[11px] border border-slate-700">{kid.initials}</div>
+                                }
+                                <div className="truncate">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="font-mono text-[9px] font-bold text-slate-400 bg-slate-800 px-1 py-0.2 rounded">{kid.id}</span>
+                                    <h4 className="font-bold text-xs text-white truncate">{kid.name}</h4>
+                                  </div>
+                                  <p className="text-[10px] text-slate-400 truncate mt-0.5">{kid.zone} · {kid.monitor}</p>
+                                </div>
+                              </div>
+                              <button type="button" onClick={() => handleToggleManual(kid.id)} className={`px-2.5 py-1 rounded text-xs font-bold transition-all flex-shrink-0 ${isReg ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30' : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'}`}>
+                                {isReg ? '✓' : '+'}
+                              </button>
+                            </div>
+                            {kid.medical && (
+                              <div className="mt-1.5 pt-1 border-t border-slate-800/80 flex items-center gap-1 text-[10px] font-semibold text-amber-300">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0"></span>
+                                <span className="truncate">{kid.medical.title}</span>
+                              </div>
+                            )}
+                            {isReg && record?.timestamp && (
+                              <div className="mt-1 text-[9px] font-mono text-emerald-400/80 text-right">Registrado {record.timestamp}</div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Acciones */}
+                    <div className="pt-2 flex items-center gap-2">
+                      <button type="button" onClick={handleResetSession} className="flex-1 py-2 px-3 rounded-lg bg-rose-950/30 hover:bg-rose-900/40 text-rose-300 text-xs font-semibold border border-rose-800/40 transition-colors">
+                        Reiniciar {MODES.find(m => m.id === currentMode)?.label}
+                      </button>
+                      <button type="button" onClick={() => alert(`Turno ${MODES.find(m => m.id === currentMode)?.label}: ${registeredCount} fichados, ${pendingCount} pendientes de ${totalCount}.`)} className="py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700">
+                        Exportar
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </main>
+            </div>
+          )}
+
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
+    function App() {
+      const [currentUser, setCurrentUser] = useState({ role: 'educador', name: 'Laura Sánchez' });
+      const [navScreen, setNavScreen] = useState('auth'); // 'auth' | 'menu' | 'minors_list' | 'add_minor' | 'recount'
+      const [currentView, setCurrentView] = useState('scan'); // 'scan' | 'summary'  (dentro de recount)
+      const [currentMode, setCurrentMode] = useState('comida');
+
+      // Estado offline-first: menores
+      const [minors, setMinors] = useState(() => {
+        try {
+          const stored = localStorage.getItem(STORAGE_KEYS.MINORS);
+          if (stored !== null) return JSON.parse(stored);
+        } catch (e) {}
+        return MINORS_DATA;
+      });
+
+      // Estado offline-first: registros de turnos
+      const [records, setRecords] = useState(() => {
+        try {
+          const stored = localStorage.getItem(STORAGE_KEYS.RECORDS);
+          if (stored !== null) return JSON.parse(stored);
+        } catch (e) {}
+        return { desayuno: {}, mediodia: {}, comida: {}, merienda: {}, cena: {}, moviles: {} };
+      });
+
+      // Estado de conexión y cola de sincronización
+      const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
+      const [syncQueue, setSyncQueue] = useState(() => {
+        try {
+          const stored = localStorage.getItem(STORAGE_KEYS.SYNC_QUEUE);
+          return stored ? JSON.parse(stored) : [];
+        } catch (e) { return []; }
+      });
+
+      const [inputCode, setInputCode] = useState('');
+      const [summaryFilter, setSummaryFilter] = useState('all');
+      const [searchQuery, setSearchQuery] = useState('');
+      const [searchTermMinors, setSearchTermMinors] = useState('');
+      const [currentTimeStr, setCurrentTimeStr] = useState('');
+      const [feedback, setFeedback] = useState(null);
+      const [screenFlash, setScreenFlash] = useState(null);
+      const [showAdvancedFiliation, setShowAdvancedFiliation] = useState(false);
+      const [isProcessingPhoto, setIsProcessingPhoto] = useState(false);
+      const [newMinorForm, setNewMinorForm] = useState({
+        name: '', photo: '', fatherName: '', motherName: '',
+        birthPlace: '', birthDate: '', originCountry: 'España',
+        zone: 'Pabellón A · Hab. 101', medicalAlert: 'none', medicalDetails: ''
+      });
+
+      const inputRef = useRef(null);
+      const cameraInputRef = useRef(null);
+      const galleryInputRef = useRef(null);
+
+      // Persistencia automática
+      useEffect(() => {
+        try { localStorage.setItem(STORAGE_KEYS.MINORS, JSON.stringify(minors)); } catch (e) {}
+      }, [minors]);
+      useEffect(() => {
+        try { localStorage.setItem(STORAGE_KEYS.RECORDS, JSON.stringify(records)); } catch (e) {}
+      }, [records]);
+      useEffect(() => {
+        try { localStorage.setItem(STORAGE_KEYS.SYNC_QUEUE, JSON.stringify(syncQueue)); } catch (e) {}
+      }, [syncQueue]);
+
+      // Sincronización automática al recuperar conexión
+      const syncPendingChanges = () => {
+        const queue = JSON.parse(localStorage.getItem(STORAGE_KEYS.SYNC_QUEUE) || '[]');
+        if (queue.length === 0) return;
+        console.log(`[KODI SYNC] Sincronizando ${queue.length} cambios pendientes...`, queue);
+        localStorage.setItem(STORAGE_KEYS.LAST_SYNC, new Date().toISOString());
+        setSyncQueue([]);
+      };
+
+      const queueChange = (action, payload) => {
+        const item = { id: `${Date.now()}-${Math.random().toString(36).substr(2,6)}`, action, payload, timestamp: new Date().toISOString() };
+        setSyncQueue(prev => {
+          const next = [...prev, item];
+          if (navigator.onLine) setTimeout(syncPendingChanges, 500);
+          return next;
+        });
+      };
+
+      // Detectores de red
+      useEffect(() => {
+        const handleOnline = () => { setIsOnline(true); syncPendingChanges(); };
+        const handleOffline = () => setIsOnline(false);
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+        return () => { window.removeEventListener('online', handleOnline); window.removeEventListener('offline', handleOffline); };
+      }, []);
+
+      // Reloj institucional
+      useEffect(() => {
+        const updateClock = () => setCurrentTimeStr(new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+        updateClock();
+        const iv = setInterval(updateClock, 1000);
+        return () => clearInterval(iv);
+      }, []);
+
+      // Valores calculados
+      const activeRecords = records[currentMode] || {};
+      const registeredCount = Object.keys(activeRecords).length;
+      const totalCount = minors.length;
+      const pendingCount = Math.max(0, totalCount - registeredCount);
+      const operatorInfo = `${currentUser.name} (${STAFF_ROLES.find(r => r.id === currentUser.role)?.label})`;
+
+      // Compresión de foto con Canvas
+      const processImageFile = (file) => {
+        if (!file) return;
+        setIsProcessingPhoto(true);
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const maxDim = 400;
+            let w = img.width, h = img.height;
+            if (w > h) { if (w > maxDim) { h = Math.round(h * maxDim / w); w = maxDim; } }
+            else { if (h > maxDim) { w = Math.round(w * maxDim / h); h = maxDim; } }
+            canvas.width = w; canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            setNewMinorForm(prev => ({ ...prev, photo: canvas.toDataURL('image/jpeg', 0.75) }));
+            setIsProcessingPhoto(false);
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      };
+
+      const handlePhotoInput = (e) => { const f = e.target.files?.[0]; if (f) processImageFile(f); };
+
+      // Escaneo o pulsación táctil
+      const processScan = (rawCode) => {
+        const code = (rawCode || '').trim().toUpperCase();
+        if (!code) return;
+        playAudioFeedback('beep');
+        const found = minors.find(m =>
+          m.id.toUpperCase() === code ||
+          (m.wristband && m.wristband.toUpperCase() === code) ||
+          m.name.toUpperCase().includes(code)
+        );
+        const timestampStr = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        if (!found) {
+          playAudioFeedback('error'); triggerHaptic([150, 80, 150]); setScreenFlash('red');
+          setFeedback({ status: 'not_found', code, timestamp: timestampStr, message: `Código no registrado: "${code}"` });
+          setTimeout(() => setScreenFlash(null), 400);
+          setInputCode(''); return;
+        }
+        const previousRecord = activeRecords[found.id];
+        if (previousRecord) {
+          playAudioFeedback('duplicate'); triggerHaptic([250, 100, 250]); setScreenFlash('red');
+          setFeedback({ status: 'duplicate', minor: found, timestamp: timestampStr, previousTime: previousRecord.timestamp, message: 'REGISTRO PREVIO EXISTENTE' });
+          setTimeout(() => setScreenFlash(null), 500);
+        } else {
+          playAudioFeedback('success'); triggerHaptic([90]); setScreenFlash('green');
+          const newRec = { timestamp: timestampStr, registeredBy: operatorInfo };
+          setRecords(prev => ({ ...prev, [currentMode]: { ...prev[currentMode], [found.id]: newRec } }));
+          queueChange('RECORD_ATTENDANCE', { mode: currentMode, minorId: found.id, record: newRec });
+          setFeedback({ status: 'success', minor: found, timestamp: timestampStr, message: currentMode === 'moviles' ? 'Dispositivo verificado y registrado' : 'Acceso validado y registrado' });
+          setTimeout(() => setScreenFlash(null), 500);
+        }
+        setInputCode('');
+      };
+
+      const handleToggleManual = (minorId) => {
+        const isRegistered = !!activeRecords[minorId];
+        const timestampStr = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        if (isRegistered) {
+          setRecords(prev => { const copy = { ...prev[currentMode] }; delete copy[minorId]; return { ...prev, [currentMode]: copy }; });
+          queueChange('REMOVE_ATTENDANCE', { mode: currentMode, minorId });
+        } else {
+          const newRec = { timestamp: timestampStr, registeredBy: operatorInfo };
+          setRecords(prev => ({ ...prev, [currentMode]: { ...prev[currentMode], [minorId]: newRec } }));
+          queueChange('RECORD_ATTENDANCE', { mode: currentMode, minorId, record: newRec });
+          playAudioFeedback('success');
+        }
+      };
+
+      const handleResetSession = () => {
+        const label = MODES.find(m => m.id === currentMode)?.label;
+        if (confirm(`¿Reiniciar los registros de "${label}"?`)) {
+          setRecords(prev => ({ ...prev, [currentMode]: {} }));
+          queueChange('RESET_MODE', { mode: currentMode });
+          setFeedback(null);
+        }
+      };
+
+      const handleSaveNewMinor = (e) => {
+        e.preventDefault();
+        if (!newMinorForm.name.trim()) { alert('Indica el nombre y apellidos del menor.'); return; }
+        const nextIndex = minors.length + 1;
+        const generatedId = `ID-${String(nextIndex).padStart(3, '0')}`;
+        const generatedWristband = `PUL-${Math.floor(1000 + Math.random() * 9000)}`;
+        const nameParts = newMinorForm.name.trim().split(' ');
+        const initials = ((nameParts[0]?.[0] || 'X') + (nameParts[1]?.[0] || nameParts[0]?.[1] || 'M')).toUpperCase();
+        let medicalData = null;
+        if (newMinorForm.medicalAlert !== 'none') {
+          medicalData = {
+            hasAlert: true,
+            type: newMinorForm.medicalAlert === 'celiac' ? 'Alergia Alimentaria' : newMinorForm.medicalAlert === 'nuts' ? 'Alerta Crítica' : newMinorForm.medicalAlert === 'halal' ? 'Dieta Cultural' : 'Condición Médica',
+            title: newMinorForm.medicalAlert === 'celiac' ? 'CELÍACO ESTRICTO' : newMinorForm.medicalAlert === 'nuts' ? 'ALERGIA A FRUTOS SECOS' : newMinorForm.medicalAlert === 'halal' ? 'MENÚ HALAL' : 'ALERTA DIETÉTICA',
+            description: newMinorForm.medicalDetails || 'Protocolo específico asignado.',
+            severity: newMinorForm.medicalAlert === 'nuts' ? 'high' : 'medium'
+          };
+        }
+        const newChild = {
+          id: generatedId, wristband: generatedWristband,
+          name: newMinorForm.name.trim(), photo: newMinorForm.photo || '',
+          age: newMinorForm.birthDate ? Math.max(1, new Date().getFullYear() - new Date(newMinorForm.birthDate).getFullYear()) : 12,
+          zone: newMinorForm.zone || 'Pabellón A · Hab. 101', monitor: currentUser.name,
+          phoneModel: 'Pendiente', initials,
+          fatherName: newMinorForm.fatherName || '', motherName: newMinorForm.motherName || '',
+          birthPlace: newMinorForm.birthPlace || '', birthDate: newMinorForm.birthDate || '',
+          originCountry: newMinorForm.originCountry || 'España', medical: medicalData
+        };
+        setMinors(prev => [newChild, ...prev]);
+        queueChange('ADD_MINOR', newChild);
+        playAudioFeedback('success');
+        setNewMinorForm({ name: '', photo: '', fatherName: '', motherName: '', birthPlace: '', birthDate: '', originCountry: 'España', zone: 'Pabellón A · Hab. 101', medicalAlert: 'none', medicalDetails: '' });
+        setNavScreen('minors_list');
+      };
+
+      const handleDeleteMinor = (minorId) => {
+        const found = minors.find(m => m.id === minorId);
+        if (!found) return;
+        if (confirm(`¿Eliminar a "${found.name}" de la base de datos?\nEsta acción es irreversible.`)) {
+          setMinors(prev => prev.filter(m => m.id !== minorId));
+          setRecords(prev => {
+            const copy = { ...prev };
+            Object.keys(copy).forEach(mk => { if (copy[mk]?.[minorId]) { const mc = { ...copy[mk] }; delete mc[minorId]; copy[mk] = mc; } });
+            return copy;
+          });
+          queueChange('DELETE_MINOR', { id: minorId });
+          playAudioFeedback('beep');
+        }
+      };
+
+      const handleClearTestData = () => {
+        if (confirm('¿Vaciar la lista para empezar con datos reales desde cero?')) {
+          setMinors([]);
+          setRecords({ desayuno: {}, mediodia: {}, comida: {}, merienda: {}, cena: {}, moviles: {} });
+          queueChange('CLEAR_DATABASE', {});
+        }
+      };
+
+      const handleLoadTestData = () => {
+        setMinors(MINORS_DATA);
+        queueChange('RESTORE_DEMO', {});
+      };
+
+      // ─────────────────────────────────────────────
+      // JSX PRINCIPAL
+      // ─────────────────────────────────────────────
+      return (
+        <div className={`min-h-screen flex flex-col max-w-md mx-auto relative transition-colors duration-200 ${screenFlash === 'green' ? 'bg-emerald-950/20' : screenFlash === 'red' ? 'bg-rose-950/20' : ''}`}>
+
+          {/* ══════════════════════════════════════ */}
+          {/* PANTALLA 1: LOGIN                      */}
+          {/* ══════════════════════════════════════ */}
+          {navScreen === 'auth' && (
+            <div className="flex-1 flex flex-col justify-center p-6 space-y-6">
+              <div className="text-center">
+                <div className="w-16 h-16 rounded-2xl bg-blue-600 flex items-center justify-center font-black text-white text-lg mx-auto mb-3 shadow-xl border border-blue-400/30">
+                  KD
+                </div>
+                <h1 className="text-2xl font-black text-white tracking-tight">KODIME</h1>
+                <p className="text-sm text-slate-400 mt-1">Control Residencial · SAMU</p>
+              </div>
+
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-xl">
+                <div>
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">Nombre</label>
+                  <input
+                    type="text"
+                    value={loginForm.name}
+                    onChange={e => setLoginForm(f => ({ ...f, name: e.target.value }))}
+                    placeholder="Tu nombre completo"
+                    className="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 text-white text-sm px-3.5 py-2.5 rounded-xl outline-none placeholder:text-slate-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">Rol</label>
+                  <select
+                    value={loginForm.role}
+                    onChange={e => setLoginForm(f => ({ ...f, role: e.target.value }))}
+                    className="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 text-white text-sm px-3.5 py-2.5 rounded-xl outline-none"
+                  >
+                    {STAFF_ROLES.map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
+                  </select>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const name = loginForm.name.trim() || 'Operador';
+                    setCurrentUser({ role: loginForm.role, name });
+                    setNavScreen('menu');
+                  }}
+                  className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm rounded-xl transition-all shadow-md active:scale-98"
+                >
+                  Entrar
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════ */}
+          {/* PANTALLA 2: PANEL OPERATIVO            */}
+          {/* ══════════════════════════════════════ */}
+          {navScreen === 'menu' && (
+            <div className="flex-1 flex flex-col">
+              <header className="bg-slate-900/95 backdrop-blur-md border-b border-slate-800 px-4 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-black text-white text-xs border border-blue-400/30">KD</div>
+                  <div>
+                    <span className="font-extrabold text-sm text-white">KODIME</span>
+                    <p className="text-[10px] text-slate-400">{currentUser.name} · <span className="text-blue-400">{STAFF_ROLES.find(r => r.id === currentUser.role)?.label}</span></p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-xs text-slate-400">{currentTimeStr}</span>
+                  <button type="button" onClick={() => setNavScreen('auth')} className="text-[11px] font-semibold text-slate-300 hover:text-white px-2.5 py-1 bg-slate-800 rounded-lg border border-slate-700">Salir</button>
+                </div>
+              </header>
+
+              <main className="flex-1 p-4 space-y-3">
+                <h2 className="text-base font-black text-white px-1">Panel Operativo</h2>
+
+                {/* MÓDULO: RECUENTO */}
+                <button
+                  type="button"
+                  onClick={() => { setCurrentView('scan'); setFeedback(null); setNavScreen('recount'); }}
+                  className="w-full p-5 rounded-2xl bg-slate-900 border border-slate-800 hover:border-blue-500/60 text-left transition-all active:scale-98 shadow-lg group"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="w-12 h-12 rounded-xl bg-blue-600/20 text-blue-400 flex items-center justify-center text-2xl border border-blue-500/30">📋</div>
+                    <span className="text-[10px] font-mono font-bold uppercase px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                      {registeredCount} / {totalCount} fichados
+                    </span>
+                  </div>
+                  <div className="mt-4">
+                    <h3 className="text-xl font-black text-white">Recuento</h3>
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+                    <span>Turno: <strong className="text-white uppercase">{MODES.find(m => m.id === currentMode)?.label}</strong></span>
+                    <span className="text-blue-400 font-bold group-hover:translate-x-1 transition-transform">Abrir ➔</span>
+                  </div>
+                </button>
+
+                {/* MÓDULO: LISTADO DE MENORES */}
+                <button
+                  type="button"
+                  onClick={() => setNavScreen('minors_list')}
+                  className="w-full p-5 rounded-2xl bg-slate-900 border border-slate-800 hover:border-rose-500/60 text-left transition-all active:scale-98 shadow-lg group"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="w-12 h-12 rounded-xl bg-rose-600/20 text-rose-400 flex items-center justify-center text-2xl border border-rose-500/30">👥</div>
+                    <span className="text-[10px] font-mono font-bold uppercase px-2.5 py-1 rounded-full bg-rose-500/15 text-rose-300 border border-rose-500/30">
+                      {totalCount} registrados
+                    </span>
+                  </div>
+                  <div className="mt-4">
+                    <h3 className="text-xl font-black text-white">Listado de Menores</h3>
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+                    <span>Añadir · Buscar · Eliminar</span>
+                    <span className="text-rose-400 font-bold group-hover:translate-x-1 transition-transform">Ver listado ➔</span>
+                  </div>
+                </button>
+              </main>
+
+              <div className="px-4 pb-4 flex items-center justify-between text-[11px] text-slate-500">
+                <div className="flex items-center gap-1.5">
+                  <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-400' : 'bg-amber-400'}`}></span>
+                  <span>{isOnline ? 'En línea' : 'Offline'}{syncQueue.length > 0 ? ` · ${syncQueue.length} cambios pendientes` : ''}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════ */}
+          {/* PANTALLA 3: LISTADO DE MENORES         */}
+          {/* ══════════════════════════════════════ */}
+          {navScreen === 'minors_list' && (
+            <div className="flex-1 flex flex-col">
+              <header className="bg-slate-900/95 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40 px-3.5 py-3 flex items-center justify-between">
+                <button type="button" onClick={() => setNavScreen('menu')} className="text-xs font-bold text-rose-400 hover:text-rose-300 flex items-center gap-1 bg-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-800">← Panel</button>
+                <div className="text-center">
+                  <span className="font-extrabold text-sm text-white block">Listado de Menores</span>
+                  <span className="text-[10px] text-slate-400 font-mono">{minors.length} {minors.length === 1 ? 'residente' : 'residentes'}</span>
+                </div>
+                <button type="button" onClick={() => setNavScreen('add_minor')} className="text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white px-3 py-1.5 rounded-lg shadow-sm flex items-center gap-1 active:scale-95 transition-all">+ Añadir</button>
+              </header>
+
+              <main className="flex-1 px-3.5 py-3 overflow-y-auto space-y-3 pb-6">
+                {/* Buscador */}
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={searchTermMinors}
+                    onChange={e => setSearchTermMinors(e.target.value)}
+                    placeholder="Buscar por nombre, pulsera o habitación..."
+                    className="w-full bg-slate-900 border border-slate-800 focus:border-rose-500 text-white text-xs px-3.5 py-2.5 rounded-xl outline-none placeholder:text-slate-500 pr-10"
+                  />
+                  {searchTermMinors && (
+                    <button type="button" onClick={() => setSearchTermMinors('')} className="absolute right-3 top-2.5 text-slate-400 hover:text-white text-xs p-0.5">✕</button>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between text-[11px] px-1 text-slate-500">
+                  <div className="flex items-center gap-1.5">
+                    <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
+                    <span>{isOnline ? 'Base de datos en línea' : 'Modo Offline'}</span>
+                  </div>
+                  {minors.length > 0 && (
+                    <button type="button" onClick={handleClearTestData} className="text-[10px] text-slate-600 hover:text-rose-400 underline">Vaciar lista</button>
+                  )}
+                </div>
+
+                {/* Lista filtrada */}
+                {(() => {
+                  const q = searchTermMinors.toLowerCase().trim();
+                  const filtered = minors.filter(m => !q || (m.name && m.name.toLowerCase().includes(q)) || (m.id && m.id.toLowerCase().includes(q)) || (m.wristband && m.wristband.toLowerCase().includes(q)) || (m.zone && m.zone.toLowerCase().includes(q)));
+
+                  if (minors.length === 0) return (
+                    <div className="text-center py-12 px-4 bg-slate-900/40 rounded-2xl border border-dashed border-slate-800 space-y-3">
+                      <div className="w-12 h-12 rounded-2xl bg-slate-900 flex items-center justify-center text-2xl mx-auto">👥</div>
+                      <h3 className="text-sm font-bold text-white">Sin menores registrados</h3>
+                      <p className="text-xs text-slate-400">Añade los menores con su fotografía desde la cámara o galería.</p>
+                      <div className="pt-2 flex flex-col gap-2 max-w-xs mx-auto">
+                        <button type="button" onClick={() => setNavScreen('add_minor')} className="w-full py-2.5 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl shadow-md transition-all">+ Añadir Primer Menor</button>
+                        <button type="button" onClick={handleLoadTestData} className="text-xs text-slate-500 hover:text-slate-300 py-1">Cargar datos demo de ejemplo</button>
+                      </div>
+                    </div>
+                  );
+
+                  if (filtered.length === 0) return (
+                    <div className="text-center py-8 px-4 bg-slate-900/40 rounded-xl border border-slate-800">
+                      <p className="text-xs text-slate-400">Sin resultados para "{searchTermMinors}".</p>
+                      <button type="button" onClick={() => setSearchTermMinors('')} className="mt-2 text-xs text-rose-400 hover:underline">Borrar búsqueda</button>
+                    </div>
+                  );
+
+                  return (
+                    <div className="space-y-2">
+                      {filtered.map(minor => (
+                        <div key={minor.id} className="p-3 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 transition-all flex items-center gap-3 shadow-sm">
+                          <div className="flex-shrink-0">
+                            {minor.photo
+                              ? <img src={minor.photo} alt={minor.name} className="w-12 h-12 rounded-xl object-cover border border-slate-700 shadow-sm" />
+                              : <div className="w-12 h-12 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-white text-sm">{minor.initials || 'KD'}</div>
+                            }
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <h3 className="font-bold text-sm text-white truncate">{minor.name}</h3>
+                              {minor.age && <span className="text-[10px] text-slate-400">({minor.age}a)</span>}
+                            </div>
+                            <div className="flex items-center gap-1.5 mt-0.5 text-[11px] text-slate-400 truncate">
+                              <span className="font-mono text-slate-300 bg-slate-950 px-1.5 py-0.2 rounded border border-slate-800 text-[10px]">{minor.wristband || minor.id}</span>
+                              <span>·</span>
+                              <span className="truncate">{minor.zone || 'Sin habitación'}</span>
+                            </div>
+                            {minor.medical?.hasAlert && (
+                              <div className="mt-1 flex items-center gap-1">
+                                <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 truncate max-w-full">⚠️ {minor.medical.title}</span>
+                              </div>
+                            )}
+                          </div>
+                          <button type="button" onClick={() => handleDeleteMinor(minor.id)} className="p-2 rounded-lg bg-slate-950 hover:bg-rose-950/60 text-slate-500 hover:text-rose-400 border border-slate-800 hover:border-rose-800/60 transition-colors flex-shrink-0" title="Eliminar">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </main>
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════ */}
+          {/* PANTALLA 4: AÑADIR MENOR              */}
+          {/* ══════════════════════════════════════ */}
+          {navScreen === 'add_minor' && (
+            <div className="flex-1 flex flex-col">
+              <header className="bg-slate-900/95 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40 px-3.5 py-3 flex items-center justify-between">
+                <button type="button" onClick={() => setNavScreen('minors_list')} className="text-xs font-bold text-rose-400 hover:text-rose-300 flex items-center gap-1 bg-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-800">← Volver</button>
+                <span className="font-bold text-sm text-white">Añadir Menor</span>
+                <div className="w-12"></div>
+              </header>
+
+              {/* Inputs ocultos para cámara y galería */}
+              <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={handlePhotoInput} className="hidden" />
+              <input ref={galleryInputRef} type="file" accept="image/*" onChange={handlePhotoInput} className="hidden" />
+
+              <main className="flex-1 px-3.5 py-3 overflow-y-auto pb-6">
+                <form onSubmit={handleSaveNewMinor} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-4 shadow-md">
+
+                  {/* FOTO */}
+                  <div>
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-2">Fotografía</label>
+                    {newMinorForm.photo ? (
+                      <div className="flex items-center gap-3 p-3 bg-slate-950 rounded-xl border border-slate-800">
+                        <img src={newMinorForm.photo} alt="Foto" className="w-16 h-16 rounded-xl object-cover border-2 border-emerald-500 shadow-md" />
+                        <div className="flex-1">
+                          <span className="text-xs font-bold text-emerald-400 block">✓ Foto cargada</span>
+                          <div className="flex gap-2 mt-2">
+                            <button type="button" onClick={() => cameraInputRef.current?.click()} className="text-[11px] font-semibold bg-slate-800 text-slate-200 px-2.5 py-1 rounded-lg border border-slate-700">Repetir</button>
+                            <button type="button" onClick={() => setNewMinorForm(p => ({ ...p, photo: '' }))} className="text-[11px] font-semibold text-rose-400 hover:text-rose-300 px-2 py-1">Quitar</button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2">
+                        <button type="button" onClick={() => cameraInputRef.current?.click()} disabled={isProcessingPhoto} className="p-4 bg-slate-950 hover:bg-slate-900 active:scale-95 border border-slate-800 hover:border-rose-500/60 rounded-xl flex flex-col items-center gap-1 transition-all">
+                          <span className="text-2xl">📸</span>
+                          <span className="text-xs font-bold text-slate-200">Hacer Foto</span>
+                          <span className="text-[10px] text-slate-400">Cámara</span>
+                        </button>
+                        <button type="button" onClick={() => galleryInputRef.current?.click()} disabled={isProcessingPhoto} className="p-4 bg-slate-950 hover:bg-slate-900 active:scale-95 border border-slate-800 hover:border-emerald-500/60 rounded-xl flex flex-col items-center gap-1 transition-all">
+                          <span className="text-2xl">🖼️</span>
+                          <span className="text-xs font-bold text-slate-200">Galería</span>
+                          <span className="text-[10px] text-slate-400">Archivo</span>
+                        </button>
+                      </div>
+                    )}
+                    {isProcessingPhoto && <p className="text-xs text-slate-400 mt-1 text-center">Procesando imagen...</p>}
+                  </div>
+
+                  {/* NOMBRE */}
+                  <div>
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Nombre y Apellidos *</label>
+                    <input
+                      type="text" required
+                      value={newMinorForm.name}
+                      onChange={e => setNewMinorForm(p => ({ ...p, name: e.target.value }))}
+                      placeholder="Ej: Karim Ben Barek"
+                      className="w-full bg-slate-950 border border-slate-800 focus:border-rose-500 text-white text-sm px-3.5 py-2.5 rounded-xl outline-none placeholder:text-slate-500"
+                    />
+                  </div>
+
+                  {/* FECHA Y HABITACIÓN */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Fecha Nacimiento</label>
+                      <input type="date" value={newMinorForm.birthDate} onChange={e => setNewMinorForm(p => ({ ...p, birthDate: e.target.value }))} className="w-full bg-slate-950 border border-slate-800 focus:border-rose-500 text-white text-xs px-3 py-2.5 rounded-xl outline-none" />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Habitación</label>
+                      <input type="text" value={newMinorForm.zone} onChange={e => setNewMinorForm(p => ({ ...p, zone: e.target.value }))} placeholder="Hab. 101" className="w-full bg-slate-950 border border-slate-800 focus:border-rose-500 text-white text-xs px-3 py-2.5 rounded-xl outline-none" />
+                    </div>
+                  </div>
+
+                  {/* ALERGIAS / DIETA */}
+                  <div>
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Alergias / Dieta</label>
+                    <select value={newMinorForm.medicalAlert} onChange={e => setNewMinorForm(p => ({ ...p, medicalAlert: e.target.value }))} className="w-full bg-slate-950 border border-slate-800 focus:border-rose-500 text-white text-xs px-3 py-2.5 rounded-xl outline-none mb-2">
+                      <option value="none">Sin restricciones</option>
+                      <option value="celiac">🌾 Celíaco (Sin gluten)</option>
+                      <option value="nuts">🥜 Alergia a frutos secos</option>
+                      <option value="halal">🥩 Menú Halal</option>
+                      <option value="other">⚠️ Otra condición</option>
+                    </select>
+                    {newMinorForm.medicalAlert !== 'none' && (
+                      <input type="text" value={newMinorForm.medicalDetails} onChange={e => setNewMinorForm(p => ({ ...p, medicalDetails: e.target.value }))} placeholder="Detalles de la condición médica..." className="w-full bg-slate-950 border border-amber-500/50 text-amber-200 text-xs px-3 py-2 rounded-xl outline-none placeholder:text-slate-600" />
+                    )}
+                  </div>
+
+                  {/* DATOS DE FILIACIÓN (colapsable) */}
+                  <div>
+                    <button type="button" onClick={() => setShowAdvancedFiliation(!showAdvancedFiliation)} className="text-xs text-slate-400 hover:text-slate-200 flex items-center gap-1 font-semibold">
+                      <span>{showAdvancedFiliation ? '▼ Ocultar filiación' : '▶ Datos de padres y procedencia'}</span>
+                    </button>
+                    {showAdvancedFiliation && (
+                      <div className="mt-2.5 space-y-2.5 p-3 bg-slate-950 rounded-xl border border-slate-800">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-[10px] font-bold text-slate-400 block mb-1">Padre</label>
+                            <input type="text" value={newMinorForm.fatherName} onChange={e => setNewMinorForm(p => ({ ...p, fatherName: e.target.value }))} placeholder="Nombre" className="w-full bg-slate-900 border border-slate-800 text-white text-xs px-2.5 py-1.5 rounded-lg outline-none" />
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-bold text-slate-400 block mb-1">Madre</label>
+                            <input type="text" value={newMinorForm.motherName} onChange={e => setNewMinorForm(p => ({ ...p, motherName: e.target.value }))} placeholder="Nombre" className="w-full bg-slate-900 border border-slate-800 text-white text-xs px-2.5 py-1.5 rounded-lg outline-none" />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-[10px] font-bold text-slate-400 block mb-1">Lugar Nacimiento</label>
+                            <input type="text" value={newMinorForm.birthPlace} onChange={e => setNewMinorForm(p => ({ ...p, birthPlace: e.target.value }))} placeholder="Ciudad" className="w-full bg-slate-900 border border-slate-800 text-white text-xs px-2.5 py-1.5 rounded-lg outline-none" />
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-bold text-slate-400 block mb-1">País</label>
+                            <input type="text" value={newMinorForm.originCountry} onChange={e => setNewMinorForm(p => ({ ...p, originCountry: e.target.value }))} placeholder="España" className="w-full bg-slate-900 border border-slate-800 text-white text-xs px-2.5 py-1.5 rounded-lg outline-none" />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <button type="submit" className="w-full py-3 bg-rose-600 hover:bg-rose-500 text-white font-bold text-sm uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-98">
+                    Guardar Menor
+                  </button>
+                </form>
+              </main>
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════ */}
+          {/* PANTALLA 5: RECUENTO                  */}
+          {/* ══════════════════════════════════════ */}
+          {navScreen === 'recount' && (
+            <div className="flex-1 flex flex-col">
+
+              {/* Header del recuento */}
+              <header className="bg-slate-900/95 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40 px-3.5 pt-3 pb-2.5 shadow-md">
+                <div className="flex items-center justify-between mb-2">
+                  <button type="button" onClick={() => setNavScreen('menu')} className="text-xs font-bold text-blue-400 hover:text-blue-300 flex items-center gap-1 bg-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-800">← Panel</button>
+                  <div className="text-center">
+                    <span className="font-extrabold text-sm text-white block">Recuento</span>
+                    <span className="text-[10px] font-mono text-slate-400">{registeredCount}/{totalCount} · {operatorInfo}</span>
+                  </div>
+                  <span className="font-mono text-xs text-slate-400 bg-slate-950 px-2 py-1 rounded border border-slate-800">{currentTimeStr}</span>
+                </div>
+
+                {/* Selector de turnos */}
+                <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1">
+                  {MODES.map(m => {
+                    const isActive = m.id === currentMode;
+                    return (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => { setCurrentMode(m.id); setFeedback(null); }}
+                        className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${isActive ? 'bg-blue-600 text-white font-bold shadow-sm' : 'bg-slate-950 text-slate-400 hover:text-slate-200 border border-slate-800/80'}`}
+                      >
+                        {m.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </header>
+
+              {/* Barra de tabs Lector / Resumen */}
+              <div className="bg-slate-950 border-b border-slate-800 px-3.5 py-2 flex gap-2">
+                <button type="button" onClick={() => setCurrentView('scan')} className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${currentView === 'scan' ? 'bg-blue-600 text-white' : 'text-slate-400 bg-slate-900 border border-slate-800'}`}>Lector / Entrada</button>
+                <button type="button" onClick={() => setCurrentView('summary')} className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all relative ${currentView === 'summary' ? 'bg-blue-600 text-white' : 'text-slate-400 bg-slate-900 border border-slate-800'}`}>
+                  Resumen ({registeredCount})
+                  {registeredCount > 0 && <span className="absolute top-1.5 right-2.5 w-1.5 h-1.5 rounded-full bg-emerald-400"></span>}
+                </button>
+              </div>
+
+              <main className="flex-1 px-3.5 py-3 overflow-y-auto space-y-3 pb-6">
+
+                {/* ── VISTA LECTOR ── */}
+                {currentView === 'scan' && (
+                  <div className="space-y-3">
+                    {/* Input de escaneo */}
+                    <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-sm">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-300">Lector de Pulsera</span>
+                        <span className="text-[10px] text-slate-500 font-mono">HID / Teclado</span>
+                      </div>
+                      <form onSubmit={e => { e.preventDefault(); processScan(inputCode); }} className="relative">
+                        <input
+                          ref={inputRef}
+                          type="text"
+                          value={inputCode}
+                          onChange={e => setInputCode(e.target.value)}
+                          placeholder="Pasa la pulsera o escribe el ID..."
+                          className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 text-white font-mono text-sm px-3.5 py-3 rounded-lg outline-none placeholder:text-slate-500 pr-24"
+                          autoComplete="off" autoCapitalize="characters" spellCheck="false"
+                        />
+                        {inputCode && (
+                          <button type="button" onClick={() => setInputCode('')} className="absolute right-20 top-2.5 text-slate-400 hover:text-white p-1 text-xs">✕</button>
+                        )}
+                        <button type="submit" className="absolute right-1.5 top-1.5 bottom-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs uppercase px-3 rounded-md transition-colors shadow-sm">Validar</button>
+                      </form>
+
+                      {/* Fichado rápido táctil con menores reales */}
+                      {minors.length > 0 && (
+                        <div className="mt-3 pt-2.5 border-t border-slate-800">
+                          <span className="text-[11px] font-semibold text-slate-400 block mb-1.5">Fichado rápido:</span>
+                          <div className="grid grid-cols-3 gap-1.5">
+                            {minors.slice(0, 3).map(km => (
+                              <button key={km.id} type="button" onClick={() => processScan(km.id)} className="p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-blue-500 text-left transition-all active:scale-95">
+                                <div className="text-[10px] font-mono font-bold text-slate-400">{km.wristband || km.id}</div>
+                                <div className="text-xs font-semibold text-slate-200 truncate">{km.name.split(' ')[0]}</div>
+                                <div className="text-[9px] text-slate-500 font-mono mt-0.5 truncate">{km.zone}</div>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Tarjeta de feedback */}
+                    {feedback ? (
+                      <div className={`rounded-xl border p-4 shadow-lg ${feedback.status === 'success' ? 'bg-slate-900 border-emerald-500/80' : feedback.status === 'duplicate' ? 'bg-slate-900 border-rose-500/80' : 'bg-slate-900 border-amber-500/80'}`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className={`text-xs font-bold uppercase tracking-wider ${feedback.status === 'success' ? 'text-emerald-400' : feedback.status === 'duplicate' ? 'text-rose-400' : 'text-amber-400'}`}>
+                            {feedback.status === 'success' ? '✓ Acceso validado' : feedback.status === 'duplicate' ? '⚠ Registro duplicado' : '✕ No encontrado'}
+                          </span>
+                          <span className="text-[10px] font-mono text-slate-500">{feedback.timestamp}</span>
+                        </div>
+
+                        {feedback.minor && (
+                          <div className="bg-slate-950 rounded-lg p-3 border border-slate-800">
+                            <div className="flex items-center gap-2.5 mb-2">
+                              {feedback.minor.photo
+                                ? <img src={feedback.minor.photo} alt={feedback.minor.name} className="w-12 h-12 rounded-xl object-cover border border-slate-700 flex-shrink-0" />
+                                : <div className="w-10 h-10 rounded-lg bg-slate-800 text-white flex items-center justify-center font-mono font-bold text-xs border border-slate-700 flex-shrink-0">{feedback.minor.initials}</div>
+                              }
+                              <div>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="font-mono text-[10px] font-bold text-blue-400 bg-blue-500/10 px-1 py-0.2 rounded border border-blue-500/20">{feedback.minor.id}</span>
+                                  <span className="text-[10px] font-mono text-slate-400">{feedback.minor.wristband}</span>
+                                </div>
+                                <h4 className="text-sm font-bold text-white mt-0.5">{feedback.minor.name}</h4>
+                                <p className="text-[11px] text-slate-400">{feedback.minor.age} años · {feedback.minor.zone}</p>
+                              </div>
+                            </div>
+                            {feedback.minor.medical && (
+                              <div className="p-2.5 rounded-lg border border-amber-500/50 bg-amber-500/10 text-amber-200">
+                                <span className="text-[9px] font-bold uppercase tracking-wider bg-amber-500 text-slate-950 px-1 py-0.2 rounded font-mono">{feedback.minor.medical.type}</span>
+                                <h5 className="font-bold text-xs text-amber-300 mt-0.5">{feedback.minor.medical.title}</h5>
+                                <p className="text-[11px] text-amber-200/90 mt-0.5">{feedback.minor.medical.description}</p>
+                              </div>
+                            )}
+                            {feedback.status === 'duplicate' && feedback.previousTime && (
+                              <p className="text-[11px] text-rose-300 mt-2">Ya registrado a las {feedback.previousTime}</p>
+                            )}
+                          </div>
+                        )}
+
+                        {feedback.status === 'not_found' && (
+                          <p className="text-sm text-amber-300 font-mono">{feedback.message}</p>
+                        )}
+
+                        <button type="button" onClick={() => setFeedback(null)} className="w-full mt-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-semibold text-slate-200 border border-slate-700 transition-colors">
+                          Continuar escaneo
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center bg-slate-900/40 rounded-xl border border-dashed border-slate-800">
+                        <div className="w-10 h-10 rounded-lg bg-slate-800/60 border border-slate-700 flex items-center justify-center text-slate-300 font-mono text-sm mb-2.5">RF</div>
+                        <h3 className="text-sm font-semibold text-slate-200">Listo para lectura</h3>
+                        <p className="text-xs text-slate-400 mt-1">Acerca el lector a la pulsera del residente.</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* ── VISTA RESUMEN ── */}
+                {currentView === 'summary' && (
+                  <div className="space-y-3">
+                    {/* KPIs */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <button type="button" onClick={() => setSummaryFilter('all')} className={`p-2.5 rounded-xl border text-center transition-all ${summaryFilter === 'all' ? 'bg-slate-800 border-blue-500 ring-2 ring-blue-500/30' : 'bg-slate-900 border-slate-800 hover:border-slate-700'}`}>
+                        <span className="text-[10px] uppercase font-bold text-slate-400 block">Total</span>
+                        <p className="text-lg font-black text-white font-mono mt-0.5">{totalCount}</p>
+                      </button>
+                      <button type="button" onClick={() => setSummaryFilter('passed')} className={`p-2.5 rounded-xl border text-center transition-all ${summaryFilter === 'passed' ? 'bg-emerald-950/60 border-emerald-500 ring-2 ring-emerald-500/30' : 'bg-slate-900 border-slate-800 hover:border-emerald-500/40'}`}>
+                        <span className="text-[10px] uppercase font-bold text-emerald-400 block">Fichados</span>
+                        <p className="text-lg font-black text-emerald-400 font-mono mt-0.5">{registeredCount}</p>
+                      </button>
+                      <button type="button" onClick={() => setSummaryFilter('pending')} className={`p-2.5 rounded-xl border text-center transition-all ${summaryFilter === 'pending' ? 'bg-rose-950/60 border-rose-500 ring-2 ring-rose-500/30' : 'bg-slate-900 border-slate-800 hover:border-rose-500/40'}`}>
+                        <span className="text-[10px] uppercase font-bold text-rose-400 block">Pendientes</span>
+                        <p className="text-lg font-black text-rose-400 font-mono mt-0.5">{pendingCount}</p>
+                      </button>
+                    </div>
+
+                    {/* Buscador */}
+                    <div className="relative">
+                      <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Buscar por nombre, zona o alergia..." className="w-full bg-slate-950 border border-slate-700 text-xs rounded-lg px-3 py-2 text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500" />
+                      {searchQuery && <button type="button" onClick={() => setSearchQuery('')} className="absolute right-2.5 top-2 text-slate-400 hover:text-white text-xs">✕</button>}
+                    </div>
+
+                    {/* Filtro alergias */}
+                    <div className="flex justify-end">
+                      <button type="button" onClick={() => setSummaryFilter(summaryFilter === 'allergies' ? 'all' : 'allergies')} className={`text-[10px] font-bold px-2 py-0.5 rounded border transition-colors ${summaryFilter === 'allergies' ? 'bg-amber-500 text-slate-950 border-amber-400' : 'bg-slate-800 text-amber-300 border-amber-500/30'}`}>
+                        Dietas / Alergias
+                      </button>
+                    </div>
+
+                    {/* Lista de menores en resumen */}
+                    <div className="space-y-1.5">
+                      {minors.filter(m => {
+                        const isReg = !!activeRecords[m.id];
+                        if (summaryFilter === 'passed' && !isReg) return false;
+                        if (summaryFilter === 'pending' && isReg) return false;
+                        if (summaryFilter === 'allergies' && !m.medical) return false;
+                        if (!searchQuery) return true;
+                        const q = searchQuery.toLowerCase();
+                        return m.name.toLowerCase().includes(q) || m.id.toLowerCase().includes(q) || (m.zone && m.zone.toLowerCase().includes(q)) || (m.medical && m.medical.title.toLowerCase().includes(q));
+                      }).map(kid => {
+                        const record = activeRecords[kid.id];
+                        const isReg = !!record;
+                        return (
+                          <div key={kid.id} className={`p-2.5 rounded-lg border transition-all ${isReg ? 'bg-slate-900/80 border-emerald-500/40' : 'bg-slate-900/40 border-slate-800'}`}>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2.5 truncate mr-2">
+                                {kid.photo
+                                  ? <img src={kid.photo} alt={kid.name} className="w-8 h-8 rounded-lg object-cover border border-slate-700 flex-shrink-0" />
+                                  : <div className="w-8 h-8 rounded bg-slate-800 text-slate-200 flex-shrink-0 flex items-center justify-center font-mono font-bold text-[11px] border border-slate-700">{kid.initials}</div>
+                                }
+                                <div className="truncate">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="font-mono text-[9px] font-bold text-slate-400 bg-slate-800 px-1 py-0.2 rounded">{kid.id}</span>
+                                    <h4 className="font-bold text-xs text-white truncate">{kid.name}</h4>
+                                  </div>
+                                  <p className="text-[10px] text-slate-400 truncate mt-0.5">{kid.zone} · {kid.monitor}</p>
+                                </div>
+                              </div>
+                              <button type="button" onClick={() => handleToggleManual(kid.id)} className={`px-2.5 py-1 rounded text-xs font-bold transition-all flex-shrink-0 ${isReg ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30' : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'}`}>
+                                {isReg ? '✓' : '+'}
+                              </button>
+                            </div>
+                            {kid.medical && (
+                              <div className="mt-1.5 pt-1 border-t border-slate-800/80 flex items-center gap-1 text-[10px] font-semibold text-amber-300">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0"></span>
+                                <span className="truncate">{kid.medical.title}</span>
+                              </div>
+                            )}
+                            {isReg && record?.timestamp && (
+                              <div className="mt-1 text-[9px] font-mono text-emerald-400/80 text-right">Registrado {record.timestamp}</div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Acciones */}
+                    <div className="pt-2 flex items-center gap-2">
+                      <button type="button" onClick={handleResetSession} className="flex-1 py-2 px-3 rounded-lg bg-rose-950/30 hover:bg-rose-900/40 text-rose-300 text-xs font-semibold border border-rose-800/40 transition-colors">
+                        Reiniciar {MODES.find(m => m.id === currentMode)?.label}
+                      </button>
+                      <button type="button" onClick={() => alert(`Turno ${MODES.find(m => m.id === currentMode)?.label}: ${registeredCount} fichados, ${pendingCount} pendientes de ${totalCount}.`)} className="py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700">
+                        Exportar
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </main>
+            </div>
+          )}
+
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
