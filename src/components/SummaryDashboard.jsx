@@ -13,7 +13,7 @@ export function SummaryDashboard({
 
   const registeredCount = Object.keys(activeRecords).length;
   const totalCount = minors.length;
-  const pendingCount = totalCount - registeredCount;
+  const pendingCount = Math.max(0, totalCount - registeredCount);
 
   const filteredMinors = minors.filter((m) => {
     const isReg = !!activeRecords[m.id];
@@ -26,16 +26,16 @@ export function SummaryDashboard({
     return (
       m.name.toLowerCase().includes(q) ||
       m.id.toLowerCase().includes(q) ||
-      m.zone.toLowerCase().includes(q) ||
+      (m.wristband && m.wristband.toLowerCase().includes(q)) ||
+      (m.zone && m.zone.toLowerCase().includes(q)) ||
       (m.medical && m.medical.title.toLowerCase().includes(q))
     );
   });
 
   return (
     <div className="flex-1 flex flex-col space-y-3">
-      {/* 3 KPIS INTERACTIVOS: AL CLICAR FILTRAN DIRECTAMENTE */}
+      {/* 3 KPIS INTERACTIVOS */}
       <div className="grid grid-cols-3 gap-2">
-        {/* KPI: TOTAL */}
         <button
           type="button"
           onClick={() => setSummaryFilter('all')}
@@ -47,10 +47,9 @@ export function SummaryDashboard({
         >
           <span className="text-[10px] uppercase font-bold text-slate-400 block">Total</span>
           <p className="text-lg font-black text-white font-mono mt-0.5">{totalCount}</p>
-          <span className="text-[9px] text-slate-500 block">Ver todos</span>
+          <span className="text-[9px] text-slate-500 block">Todos</span>
         </button>
 
-        {/* KPI: PASADOS / FICHADOS */}
         <button
           type="button"
           onClick={() => setSummaryFilter('passed')}
@@ -62,10 +61,9 @@ export function SummaryDashboard({
         >
           <span className="text-[10px] uppercase font-bold text-emerald-400 block">Fichados</span>
           <p className="text-lg font-black text-emerald-400 font-mono mt-0.5">{registeredCount}</p>
-          <span className="text-[9px] text-emerald-300/70 block">Solo pasados</span>
+          <span className="text-[9px] text-emerald-300/70 block">Pasados</span>
         </button>
 
-        {/* KPI: PENDIENTES */}
         <button
           type="button"
           onClick={() => setSummaryFilter('pending')}
@@ -81,7 +79,7 @@ export function SummaryDashboard({
         </button>
       </div>
 
-      {/* FILTROS ADICIONALES Y BUSCADOR */}
+      {/* BUSCADOR */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-2.5 space-y-2">
         <div className="relative">
           <input
@@ -102,19 +100,19 @@ export function SummaryDashboard({
           )}
         </div>
 
-        <div className="flex items-center justify-between text-xs pt-1">
-          <span className="text-[11px] text-slate-400 font-medium">Filtro activo:</span>
+        <div className="flex items-center justify-between text-xs pt-0.5">
+          <span className="text-[11px] text-slate-400">Filtrar:</span>
           <div className="flex gap-1">
             <button
               type="button"
-              onClick={() => setSummaryFilter('allergies')}
+              onClick={() => setSummaryFilter(summaryFilter === 'allergies' ? 'all' : 'allergies')}
               className={`text-[10px] font-bold px-2 py-0.5 rounded border transition-colors ${
                 summaryFilter === 'allergies'
                   ? 'bg-amber-500 text-slate-950 border-amber-400'
                   : 'bg-slate-800 text-amber-300 border-amber-500/30'
               }`}
             >
-              Dietas / Alergias
+              ⚠️ Alergias / Dietas
             </button>
           </div>
         </div>
@@ -124,7 +122,7 @@ export function SummaryDashboard({
       <div className="flex-1 overflow-y-auto space-y-1.5 pr-0.5 max-h-[50vh]">
         {filteredMinors.length === 0 ? (
           <div className="p-8 text-center text-slate-400 bg-slate-900/40 rounded-xl border border-slate-800">
-            <p className="text-xs">No se encontraron residentes con este filtro.</p>
+            <p className="text-xs">No hay menores para este filtro.</p>
           </div>
         ) : (
           filteredMinors.map((kid) => {
@@ -142,20 +140,28 @@ export function SummaryDashboard({
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2.5 truncate mr-2">
-                    <div className="w-8 h-8 rounded bg-slate-800 text-slate-200 flex-shrink-0 flex items-center justify-center font-mono font-bold text-[11px] border border-slate-700">
-                      {kid.initials}
-                    </div>
+                    {kid.photo ? (
+                      <img
+                        src={kid.photo}
+                        alt={kid.name}
+                        className="w-8 h-8 rounded-lg object-cover border border-slate-700 flex-shrink-0"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded bg-slate-800 text-slate-200 flex-shrink-0 flex items-center justify-center font-mono font-bold text-[11px] border border-slate-700">
+                        {kid.initials}
+                      </div>
+                    )}
                     <div className="truncate">
                       <div className="flex items-center space-x-1.5">
                         <span className="font-mono text-[9px] font-bold text-slate-400 bg-slate-800 px-1 py-0.2 rounded">
-                          {kid.id}
+                          {kid.wristband || kid.id}
                         </span>
                         <h4 className="font-bold text-xs text-white truncate">
                           {kid.name}
                         </h4>
                       </div>
                       <p className="text-[10px] text-slate-400 truncate mt-0.5">
-                        {kid.zone} · Mon: {kid.monitor}
+                        {kid.zone}
                       </p>
                     </div>
                   </div>
@@ -191,29 +197,14 @@ export function SummaryDashboard({
         )}
       </div>
 
-      {/* ACCIONES DE CIERRE Y REINICIO */}
-      <div className="pt-2 flex items-center gap-2">
+      {/* REINICIO DE TURNO */}
+      <div className="pt-1">
         <button
           type="button"
           onClick={onResetSession}
-          className="flex-1 py-2 px-3 rounded-lg bg-rose-950/30 hover:bg-rose-900/40 text-rose-300 text-xs font-semibold border border-rose-800/40 transition-colors"
+          className="w-full py-2 px-3 rounded-lg bg-rose-950/30 hover:bg-rose-900/40 text-rose-300 text-xs font-semibold border border-rose-800/40 transition-colors"
         >
-          Reiniciar {MODES.find((m) => m.id === currentMode)?.label}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => {
-            alert(
-              `Informe del turno ${MODES.find((m) => m.id === currentMode)?.label}:\n` +
-              `Registrados: ${registeredCount}\n` +
-              `Pendientes: ${pendingCount}\n` +
-              `Total: ${totalCount}`
-            );
-          }}
-          className="py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700"
-        >
-          Exportar
+          Reiniciar recuento de {MODES.find((m) => m.id === currentMode)?.label}
         </button>
       </div>
     </div>

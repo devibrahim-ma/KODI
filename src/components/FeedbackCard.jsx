@@ -72,9 +72,17 @@ export function FeedbackCard({ feedback, currentMode, onDismiss }) {
       {feedback.minor && (
         <div className="mt-3 bg-slate-950 rounded-lg p-3 border border-slate-800">
           <div className="flex items-center space-x-2.5 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-slate-800 text-slate-200 flex items-center justify-center font-mono font-bold text-xs border border-slate-700">
-              {feedback.minor.initials}
-            </div>
+            {feedback.minor.photo ? (
+              <img
+                src={feedback.minor.photo}
+                alt={feedback.minor.name}
+                className="w-12 h-12 rounded-xl object-cover border border-slate-700 shadow-sm"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-lg bg-slate-800 text-slate-200 flex items-center justify-center font-mono font-bold text-xs border border-slate-700">
+                {feedback.minor.initials}
+              </div>
+            )}
             <div>
               <div className="flex items-center space-x-1.5">
                 <span className="font-mono text-[10px] font-bold text-blue-400 bg-blue-500/10 px-1 py-0.2 rounded border border-blue-500/20">
@@ -135,7 +143,7 @@ export function FeedbackCard({ feedback, currentMode, onDismiss }) {
         onClick={onDismiss}
         className="w-full mt-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-semibold text-slate-200 border border-slate-700 transition-colors"
       >
-        Aceptar y continuar escaneo
+        Aceptar
       </button>
     </div>
   );

@@ -60,12 +60,12 @@ export function LoginScreen({ currentUser, setCurrentUser, onLogin }) {
           </div>
 
           <div className="pt-1">
-            <span className="text-[10px] text-slate-500 block mb-1 font-semibold uppercase">Perfiles rápidos demo:</span>
+            <span className="text-[10px] text-slate-500 block mb-1 font-semibold uppercase">Perfiles rápidos:</span>
             <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
               {[
                 { role: 'educador', name: 'Laura Sánchez' },
-                { role: 'ate', name: 'Carlos Ruiz' },
-                { role: 'mediador', name: 'Youssef Alami' }
+                { role: 'ate', name: 'Ibrahim Mohamed' },
+                { role: 'mediador', name: 'yusef' }
               ].map((demoUser, idx) => (
                 <button
                   key={idx}

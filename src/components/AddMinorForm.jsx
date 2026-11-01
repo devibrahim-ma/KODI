@@ -1,18 +1,69 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 
 export function AddMinorForm({ onSave, onBack, minorsCount }) {
   const [form, setForm] = useState({
     name: '',
+    photo: '',
+    birthDate: '',
+    zone: 'Pabellón A · Hab. 101',
+    medicalAlert: 'none',
+    medicalDetails: '',
     fatherName: '',
     motherName: '',
     birthPlace: '',
-    birthDate: '',
-    originCountry: 'España',
-    zone: 'Pabellón A · Hab. 106',
-    medicalAlert: 'none',
-    medicalDetails: ''
+    originCountry: 'España'
   });
-  const [success, setSuccess] = useState(null);
+
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [isProcessingPhoto, setIsProcessingPhoto] = useState(false);
+
+  const cameraInputRef = useRef(null);
+  const galleryInputRef = useRef(null);
+
+  // Compresión de imagen client-side a canvas JPEG ligero (~30KB)
+  const processImageFile = (file) => {
+    if (!file) return;
+    setIsProcessingPhoto(true);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const maxDim = 400;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxDim) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          }
+        } else {
+          if (height > maxDim) {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.75);
+        setForm((prev) => ({ ...prev, photo: compressedBase64 }));
+        setIsProcessingPhoto(false);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      processImageFile(file);
+    }
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -21,82 +72,109 @@ export function AddMinorForm({ onSave, onBack, minorsCount }) {
       return;
     }
 
-    const created = onSave(form);
-    setSuccess(created);
-    setForm({
-      name: '',
-      fatherName: '',
-      motherName: '',
-      birthPlace: '',
-      birthDate: '',
-      originCountry: 'España',
-      zone: 'Pabellón A · Hab. 106',
-      medicalAlert: 'none',
-      medicalDetails: ''
-    });
+    onSave(form);
+    onBack();
   };
 
   return (
     <div className="flex-1 flex flex-col justify-between">
+      {/* Header */}
       <header className="bg-slate-900/95 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40 px-3.5 py-3 shadow-sm flex items-center justify-between">
         <button
           type="button"
           onClick={onBack}
-          className="text-xs font-bold text-blue-400 hover:text-blue-300 flex items-center gap-1 bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800"
+          className="text-xs font-bold text-blue-400 hover:text-blue-300 flex items-center gap-1 bg-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-800"
         >
-          ← Menú Principal
+          ← Volver al Listado
         </button>
-        <span className="font-bold text-sm text-white">Alta de Residente</span>
-        <span className="text-[10px] text-slate-400 font-mono">KODIME</span>
+        <span className="font-bold text-sm text-white">Añadir Menor</span>
+        <div className="w-10"></div>
       </header>
 
-      <main className="flex-1 px-3.5 py-3 overflow-y-auto space-y-3.5 pb-20">
-        {success && (
-          <div className="p-4 rounded-xl bg-emerald-950/80 border-2 border-emerald-500 shadow-lg text-center animate-bounce">
-            <span className="text-2xl">✓</span>
-            <h4 className="font-black text-sm text-white mt-1">¡Menor Registrado con Éxito!</h4>
-            <p className="text-xs text-emerald-200 mt-0.5">
-              <strong>{success.name}</strong> vinculado con código:
-            </p>
-            <div className="mt-2 flex items-center justify-center gap-2 font-mono">
-              <span className="px-2 py-1 rounded bg-slate-900 text-blue-400 font-bold text-xs border border-blue-500/40">{success.id}</span>
-              <span className="px-2 py-1 rounded bg-slate-900 text-emerald-400 font-bold text-xs border border-emerald-500/40">{success.wristband}</span>
-            </div>
-            <div className="mt-3 flex gap-2">
-              <button
-                type="button"
-                onClick={onBack}
-                className="flex-1 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs"
-              >
-                Volver al Menú ➔
-              </button>
-              <button
-                type="button"
-                onClick={() => setSuccess(null)}
-                className="py-2 px-3 rounded-lg bg-slate-800 text-slate-300 text-xs font-semibold"
-              >
-                Añadir Otro
-              </button>
-            </div>
-          </div>
-        )}
+      {/* Inputs invisibles para Cámara y Galería */}
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={handleFileChange}
+        className="hidden"
+      />
+      <input
+        ref={galleryInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileChange}
+        className="hidden"
+      />
 
-        <form onSubmit={handleSubmit} className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 space-y-3 shadow-md">
-          {/* Foto de Perfil */}
-          <div className="flex items-center space-x-3 p-2 bg-slate-950 rounded-lg border border-slate-800">
-            <div className="w-12 h-12 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-xl font-bold text-slate-300">
-              📷
-            </div>
-            <div>
-              <span className="text-xs font-bold text-slate-200 block">Fotografía del Menor</span>
-              <span className="text-[10px] text-slate-400 block">Identificación visual nominal para el expediente</span>
-            </div>
+      <main className="flex-1 px-3.5 py-3 overflow-y-auto space-y-3 pb-24">
+        <form onSubmit={handleSubmit} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3.5 shadow-md">
+          
+          {/* SECCIÓN FOTO: CÁMARA O GALERÍA */}
+          <div>
+            <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-2">
+              Fotografía del Menor
+            </label>
+
+            {form.photo ? (
+              <div className="flex items-center gap-3 p-3 bg-slate-950 rounded-xl border border-slate-800">
+                <img
+                  src={form.photo}
+                  alt="Previsualización"
+                  className="w-16 h-16 rounded-xl object-cover border-2 border-emerald-500 shadow-md"
+                />
+                <div className="flex-1">
+                  <span className="text-xs font-bold text-emerald-400 block">✓ Foto cargada</span>
+                  <div className="flex gap-2 mt-2">
+                    <button
+                      type="button"
+                      onClick={() => cameraInputRef.current?.click()}
+                      className="text-[11px] font-semibold bg-slate-800 text-slate-200 px-2.5 py-1 rounded-lg border border-slate-700 hover:bg-slate-700"
+                    >
+                      Repetir
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setForm((prev) => ({ ...prev, photo: '' }))}
+                      className="text-[11px] font-semibold text-rose-400 hover:text-rose-300 px-2 py-1"
+                    >
+                      Quitar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => cameraInputRef.current?.click()}
+                  disabled={isProcessingPhoto}
+                  className="p-3 bg-slate-950 hover:bg-slate-850 active:scale-95 border border-slate-800 hover:border-blue-500/60 rounded-xl flex flex-col items-center justify-center text-center transition-all group"
+                >
+                  <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">📸</span>
+                  <span className="text-xs font-bold text-slate-200">Hacer Foto</span>
+                  <span className="text-[10px] text-slate-500">Cámara del móvil</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => galleryInputRef.current?.click()}
+                  disabled={isProcessingPhoto}
+                  className="p-3 bg-slate-950 hover:bg-slate-850 active:scale-95 border border-slate-800 hover:border-emerald-500/60 rounded-xl flex flex-col items-center justify-center text-center transition-all group"
+                >
+                  <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">🖼️</span>
+                  <span className="text-xs font-bold text-slate-200">Galería</span>
+                  <span className="text-[10px] text-slate-500">Subir archivo</span>
+                </button>
+              </div>
+            )}
           </div>
 
-          {/* Nombres y Apellidos */}
+          {/* Nombre y Apellidos */}
           <div>
             <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-              Nombres y Apellidos *
+              Nombre y Apellidos *
             </label>
             <input
               type="text"
@@ -104,52 +182,12 @@ export function AddMinorForm({ onSave, onBack, minorsCount }) {
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               placeholder="Ej: Karim Ben Barek"
-              className="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 text-white text-xs px-3 py-2.5 rounded-lg outline-none"
+              className="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 text-white text-sm px-3.5 py-2.5 rounded-xl outline-none placeholder:text-slate-500"
             />
           </div>
 
-          {/* Nombre Padre y Madre */}
+          {/* Fecha de Nacimiento y Habitación */}
           <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                Nombre del Padre
-              </label>
-              <input
-                type="text"
-                value={form.fatherName}
-                onChange={(e) => setForm({ ...form, fatherName: e.target.value })}
-                placeholder="Nombre completo"
-                className="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 text-white text-xs px-3 py-2 rounded-lg outline-none"
-              />
-            </div>
-            <div>
-              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                Nombre de la Madre
-              </label>
-              <input
-                type="text"
-                value={form.motherName}
-                onChange={(e) => setForm({ ...form, motherName: e.target.value })}
-                placeholder="Nombre completo"
-                className="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 text-white text-xs px-3 py-2 rounded-lg outline-none"
-              />
-            </div>
-          </div>
-
-          {/* Lugar y Fecha de Nacimiento */}
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                Lugar de Nacimiento
-              </label>
-              <input
-                type="text"
-                value={form.birthPlace}
-                onChange={(e) => setForm({ ...form, birthPlace: e.target.value })}
-                placeholder="Ej: Tetuán / Madrid"
-                className="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 text-white text-xs px-3 py-2 rounded-lg outline-none"
-              />
-            </div>
             <div>
               <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
                 Fecha de Nacimiento
@@ -158,40 +196,19 @@ export function AddMinorForm({ onSave, onBack, minorsCount }) {
                 type="date"
                 value={form.birthDate}
                 onChange={(e) => setForm({ ...form, birthDate: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 text-white text-xs px-3 py-2 rounded-lg outline-none"
+                className="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 text-white text-xs px-3 py-2.5 rounded-xl outline-none"
               />
             </div>
-          </div>
-
-          {/* País de Procedencia y Ubicación */}
-          <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                País de Procedencia
-              </label>
-              <select
-                value={form.originCountry}
-                onChange={(e) => setForm({ ...form, originCountry: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 text-white text-xs px-3 py-2 rounded-lg outline-none"
-              >
-                <option value="España">España</option>
-                <option value="Marruecos">Marruecos</option>
-                <option value="Argelia">Argelia</option>
-                <option value="Senegal">Senegal</option>
-                <option value="Colombia">Colombia</option>
-                <option value="Otro">Otro país</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                Pabellón / Habitación
+                Habitación / Pabellón
               </label>
               <input
                 type="text"
                 value={form.zone}
                 onChange={(e) => setForm({ ...form, zone: e.target.value })}
-                placeholder="Ej: Pabellón A · Hab. 106"
-                className="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 text-white text-xs px-3 py-2 rounded-lg outline-none"
+                placeholder="Ej: Hab. 101"
+                className="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 text-white text-xs px-3 py-2.5 rounded-xl outline-none"
               />
             </div>
           </div>
@@ -199,18 +216,18 @@ export function AddMinorForm({ onSave, onBack, minorsCount }) {
           {/* Alergias / Protocolo */}
           <div>
             <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-              Protocolo Dietético / Médico
+              Alergias / Dieta
             </label>
             <select
               value={form.medicalAlert}
               onChange={(e) => setForm({ ...form, medicalAlert: e.target.value })}
-              className="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 text-white text-xs px-3 py-2 rounded-lg outline-none mb-1.5"
+              className="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 text-white text-xs px-3 py-2.5 rounded-xl outline-none mb-2"
             >
-              <option value="none">Sin restricciones (Menú Ordinario)</option>
-              <option value="celiac">🌾 Celíaco (Menú Sin Gluten)</option>
-              <option value="halal">🥩 Menú Halal Certificado</option>
-              <option value="nuts">🥜 Alergia a Frutos Secos (EpiPen)</option>
-              <option value="other">⚠️ Otra patología o alergia</option>
+              <option value="none">Sin restricciones (Ordinario)</option>
+              <option value="celiac">🌾 Celíaco (Sin gluten)</option>
+              <option value="nuts">🥜 Alergia a frutos secos</option>
+              <option value="halal">🥩 Menú Halal</option>
+              <option value="other">⚠️ Otra alergia o condición</option>
             </select>
 
             {form.medicalAlert !== 'none' && (
@@ -218,22 +235,78 @@ export function AddMinorForm({ onSave, onBack, minorsCount }) {
                 type="text"
                 value={form.medicalDetails}
                 onChange={(e) => setForm({ ...form, medicalDetails: e.target.value })}
-                placeholder="Detalles médicos adicionales..."
-                className="w-full bg-slate-950 border border-amber-500/50 text-amber-200 text-xs px-3 py-2 rounded-lg outline-none placeholder:text-slate-600"
+                placeholder="Especifica los detalles de la dieta o alergia..."
+                className="w-full bg-slate-950 border border-amber-500/60 text-amber-200 text-xs px-3 py-2 rounded-xl outline-none placeholder:text-slate-600"
               />
             )}
           </div>
 
-          <div className="p-2.5 rounded-lg bg-blue-950/30 border border-blue-500/30 text-[11px] text-blue-200 flex items-center justify-between font-mono">
-            <span>ID sugerido: <strong>ID-{String(minorsCount + 1).padStart(3, '0')}</strong></span>
-            <span>Pulsera: <strong>Asignación Automática</strong></span>
+          {/* Datos adicionales opcionales */}
+          <div className="pt-1">
+            <button
+              type="button"
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              className="text-xs text-slate-400 hover:text-slate-200 flex items-center gap-1 font-semibold"
+            >
+              <span>{showAdvanced ? '▼ Ocultar datos de filiación' : '▶ Más datos (padres, procedencia)'}</span>
+            </button>
+
+            {showAdvanced && (
+              <div className="mt-2.5 space-y-2.5 p-3 bg-slate-950 rounded-xl border border-slate-800">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 block mb-1">Padre</label>
+                    <input
+                      type="text"
+                      value={form.fatherName}
+                      onChange={(e) => setForm({ ...form, fatherName: e.target.value })}
+                      placeholder="Nombre del padre"
+                      className="w-full bg-slate-900 border border-slate-800 text-white text-xs px-2.5 py-1.5 rounded-lg outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 block mb-1">Madre</label>
+                    <input
+                      type="text"
+                      value={form.motherName}
+                      onChange={(e) => setForm({ ...form, motherName: e.target.value })}
+                      placeholder="Nombre de la madre"
+                      className="w-full bg-slate-900 border border-slate-800 text-white text-xs px-2.5 py-1.5 rounded-lg outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 block mb-1">Lugar de Nacimiento</label>
+                    <input
+                      type="text"
+                      value={form.birthPlace}
+                      onChange={(e) => setForm({ ...form, birthPlace: e.target.value })}
+                      placeholder="Ciudad / Municipio"
+                      className="w-full bg-slate-900 border border-slate-800 text-white text-xs px-2.5 py-1.5 rounded-lg outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 block mb-1">País</label>
+                    <input
+                      type="text"
+                      value={form.originCountry}
+                      onChange={(e) => setForm({ ...form, originCountry: e.target.value })}
+                      placeholder="España, Marruecos..."
+                      className="w-full bg-slate-900 border border-slate-800 text-white text-xs px-2.5 py-1.5 rounded-lg outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <button
             type="submit"
-            className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-98"
+            className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm rounded-xl transition-all shadow-lg active:scale-98 mt-2"
           >
-            Guardar Menor y Asignar Pulsera
+            Guardar Menor
           </button>
         </form>
       </main>
